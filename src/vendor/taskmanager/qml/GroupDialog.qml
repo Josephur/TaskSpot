@@ -75,7 +75,6 @@ PlasmaCore.PopupPlasmaWindow {
     }
 
     Component.onCompleted: {
-        console.log("[TaskSpot] M0 shadow check: TaskSpot-built GroupDialog loaded");
         // Don't bind visible at creation, otherwise it
         // will be made visible before assigning the visual partent
         // making the window flickering in the center of the screen before being moved

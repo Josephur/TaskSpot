@@ -34,3 +34,4 @@ find_package(KSysGuard REQUIRED)
 find_package(LibNotificationManager REQUIRED)
 
 add_subdirectory(src/vendor/taskmanager)
+add_subdirectory(src/standalone)

@@ -561,9 +561,83 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
-        console.log("[TaskSpot] M0 shadow check: TaskSpot-built taskmanager main.qml loaded");
         TaskManagerApplet.TaskTools.taskManagerInstanceCount += 1;
         requestLayout.connect(iconGeometryTimer.restart);
+        autotestOpenGroupTimer.start();
+    }
+
+    // TEMPORARY TaskSpot automated-verification hook: only active under
+    // plasmoidviewer or when the temporary taskspotAutotest config key is
+    // true; opens the first grouped task's dialog so behavior can be
+    // screenshot/log verified without interactive hovering. Remove before
+    // tagging a release.
+    Timer {
+        id: autotestOpenGroupTimer
+        interval: 5000
+        onTriggered: {
+            console.log("[TaskSpot] autotest tick: cfg =", String(plasmoid.configuration.taskspotAutotest),
+                        "viewer =", Qt.application.arguments.some(function(arg) {
+                            return String(arg).includes("plasmoidviewer");
+                        }));
+            if (!(Qt.application.arguments.some(function(arg) {
+                        return String(arg).includes("plasmoidviewer");
+                    }) || plasmoid.configuration.taskspotAutotest === true)) {
+                return;
+            }
+            // Relax filters so real windows across desktops/activities appear
+            // and a group can be exercised.
+            tasksModel.filterByCurrentVirtualDesktop = false;
+            tasksModel.filterByActivity = false;
+            console.log("[TaskSpot] autotest: trigger active, starting scan timer");
+            autotestScanTimer.start();
+        }
+    }
+
+    // TEMPORARY: live re-arm when the config key flips to true. Remove with
+    // the rest of the hook.
+    Connections {
+        target: plasmoid.configuration
+        function onTaskspotAutotestChanged() {
+            console.log("[TaskSpot] autotest: config changed signal, value =",
+                        String(plasmoid.configuration.taskspotAutotest));
+            if (plasmoid.configuration.taskspotAutotest === true) {
+                autotestOpenGroupTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: autotestScanTimer
+        interval: 1500
+        onTriggered: {
+            console.log("[TaskSpot] total rows:", tasksModel.count);
+            let summary = [];
+            for (let i = 0; i < tasksModel.count && i < 40; i++) {
+                const baseIndex = tasksModel.makeModelIndex(i);
+                summary.push(JSON.stringify({
+                    d: String(tasksModel.data(baseIndex, 0)),
+                    appId: String(tasksModel.data(baseIndex, TaskManager.AbstractTasksModel.AppIdRole)),
+                    winIds: String(tasksModel.data(baseIndex, TaskManager.AbstractTasksModel.WinIdListRole)),
+                    win: tasksModel.data(baseIndex, TaskManager.AbstractTasksModel.IsWindowRole),
+                    launch: tasksModel.data(baseIndex, TaskManager.AbstractTasksModel.IsLauncherRole),
+                    kids: tasksModel.rowCount(baseIndex)
+                }));
+            }
+            console.log("[TaskSpot] autotest rows:", JSON.stringify(summary));
+            for (let i = 0; i < tasksModel.count; i++) {
+                const groupIndex = tasksModel.makeModelIndex(i);
+                if (tasksModel.rowCount(groupIndex) >= 1) {
+                    const delegate = taskRepeater.itemAt(i) as Task;
+                    if (delegate) {
+                        console.log("[TaskSpot] autotest: opening group dialog for task", i,
+                                    "with", tasksModel.rowCount(groupIndex), "windows");
+                        TaskManagerApplet.TaskTools.createGroupDialog(delegate, tasks);
+                    }
+                    return;
+                }
+            }
+            console.log("[TaskSpot] autotest: no grouped task with more than one window found");
+        }
     }
 
     Component.onDestruction: {

@@ -6,6 +6,12 @@
   <kcfgfile name=""/>
 
   <group name="General">
+    <!-- TEMPORARY TaskSpot automated-verification trigger; remove before
+         tagging a release. -->
+    <entry name="taskspotAutotest" type="Bool">
+      <label>Temporary automated-verification switch for opening a group dialog.</label>
+      <default>false</default>
+    </entry>
     <entry name="showOnlyCurrentScreen" type="Bool">
       <label>Whether to show only window tasks that are on the same screen as the widget.</label>
       <default>false</default>
