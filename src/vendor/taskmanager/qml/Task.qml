@@ -79,7 +79,25 @@ PlasmaCore.ToolTipArea {
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
         || (!!tasksRoot.groupDialog && tasksRoot.groupDialog.visualParent === task)
 
-    active: !inPopup && !tasksRoot.groupDialog && task.contextMenu?.status !== PlasmaExtras.Menu.Open
+    // TaskSpot (#11): geometry of the monitor this panel lives on, captured
+    // in this item's scope where the Screen attached property resolves to
+    // the panel window's actual output. SearchPopup is a separate window
+    // whose own Screen is not reliably set before it is first shown, and
+    // Plasmoid.screenGeometry does not exist in Plasma 6.7.4.
+    readonly property real taskspotPanelScreenWidth: Screen.width
+    readonly property real taskspotPanelScreenHeight: Screen.height
+
+    // TaskSpot (#7): grouped tasks in previews mode hand off to the
+    // focusable search popup instead of the stock tooltip, so the tooltip
+    // must stay inactive for them — otherwise it shows underneath and the
+    // popup lands on top of it a moment later. Gated on the TaskSpot applet
+    // identity (#10) so stock task manager instances never see any of this.
+    readonly property bool taskspotSearchEligible: tasksRoot.isTaskSpot
+        && Plasmoid.configuration.groupedTaskVisualization === 1
+        && model.IsGroupParent && model.ChildCount >= 2
+
+    active: !inPopup && !tasksRoot.groupDialog && !tasksRoot.searchPopup
+        && !taskspotSearchEligible && task.contextMenu?.status !== PlasmaExtras.Menu.Open
     interactive: model.IsWindow || mainItem.playerData
     location: Plasmoid.location
     mainItem: !Plasmoid.configuration.showToolTips || !model.IsWindow ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
@@ -185,11 +203,43 @@ PlasmaCore.ToolTipArea {
     Accessible.role: Accessible.Button
     Accessible.onPressAction: leftTapHandler.leftClick()
 
+    // TaskSpot: in the "small window previews" hover mode
+    // (groupedTaskVisualization == 1), the popup is a PlasmaCore.ToolTipArea
+    // which deliberately refuses keyboard focus on Wayland — typed
+    // characters would go to whichever window had focus before. To make
+    // live search work there, transition from the non-focusable tooltip
+    // to a focusable PopupPlasmaWindow (the same GroupDialog used by
+    // groupedTaskVisualization == 3) after a short glance. The user can
+    // click a thumbnail during the delay to keep the tooltip behavior.
+    Timer {
+        id: taskspotTransitionTimer
+        // Short enough to feel snappy now that no stock tooltip plays
+        // first; long enough that brushing across the panel doesn't spawn
+        // popups.
+        interval: 300
+        repeat: false
+        onTriggered: {
+            if (Plasmoid.configuration.groupedTaskVisualization !== 1) {
+                return;
+            }
+            if (!model.IsGroupParent || model.ChildCount < 2) {
+                return;
+            }
+            task.hideToolTip();
+            TaskManagerApplet.TaskTools.createSearchPopup(task, tasksRoot,
+                taskspotPanelScreenWidth, taskspotPanelScreenHeight);
+        }
+    }
+
     onToolTipVisibleChanged: toolTipVisible => {
         task.toolTipOpen = toolTipVisible;
         if (!toolTipVisible) {
             tasksRoot.toolTipOpenedByClick = null;
+            taskspotTransitionTimer.stop();
         } else {
+            // TaskSpot (#7): search-eligible groups never get here (the
+            // ToolTipArea is inactive for them); the handoff is scheduled
+            // from onContainsMouseChanged instead.
             tasksRoot.toolTipAreaItem = task;
         }
     }
@@ -198,8 +248,14 @@ PlasmaCore.ToolTipArea {
         if (containsMouse) {
             task.forceActiveFocus(Qt.MouseFocusReason);
             task.updateMainItemBindings();
+            // TaskSpot (#7): eligible groups skip the stock tooltip and go
+            // straight to the search popup after a short hover.
+            if (taskspotSearchEligible) {
+                taskspotTransitionTimer.restart();
+            }
         } else {
             tasksRoot.toolTipOpenedByClick = null;
+            taskspotTransitionTimer.stop();
         }
     }
 
@@ -286,8 +342,13 @@ PlasmaCore.ToolTipArea {
     }
 
     function modelIndex(): /*QModelIndex*/ var {
+        // TaskSpot: inside the group dialog the delegate may live behind the
+        // TaskFilterProxyModel, whose rows are filtered positions; sourceRow
+        // maps back to the real child row. Under plain tasksModel (panel
+        // delegates) sourceRow is undefined and index is already correct.
         return inPopup
-            ? tasksModel.makeModelIndex(groupDialog.visualParent.index, index)
+            ? tasksModel.makeModelIndex(groupDialog.visualParent.index,
+                                        (model.sourceRow !== undefined && model.sourceRow >= 0) ? model.sourceRow : index)
             : tasksModel.makeModelIndex(index);
     }
 
@@ -366,7 +427,13 @@ PlasmaCore.ToolTipArea {
         mainItem.virtualDesktops = Qt.binding(() => model.VirtualDesktops);
         mainItem.isOnAllVirtualDesktops = Qt.binding(() => model.IsOnAllVirtualDesktops);
         mainItem.activities = Qt.binding(() => model.Activities);
-        mainItem.isReadyForPainting = Qt.binding(() => model.Geometry.width > 0 && model.Geometry.height > 0);
+        // TaskSpot (#11): Geometry is undefined for some tasks (e.g. group
+        // parents reached by a click without a prior tooltip hover); a
+        // throw from this binding used to abort updateMainItemBindings()
+        // and with it activateTask()'s previews-mode branch, leaving group
+        // clicks dead.
+        mainItem.isReadyForPainting = Qt.binding(() => (model.Geometry?.width ?? 0) > 0
+            && (model.Geometry?.height ?? 0) > 0);
 
         mainItem.smartLauncherCountVisible = Qt.binding(() => smartLauncherItem?.countVisible ?? false);
         mainItem.smartLauncherCount = Qt.binding(() => mainItem.smartLauncherCountVisible ? (smartLauncherItem?.count ?? 0) : 0);
@@ -418,8 +485,20 @@ PlasmaCore.ToolTipArea {
         onTapped: (eventPoint, button) => leftClick()
 
         function leftClick(): void {
+            // TaskSpot: a click on the taskbar icon (including on a tooltip
+            // thumbnail) means the user picked a window — don't yank them
+            // into the GroupDialog halfway through the click.
+            taskspotTransitionTimer.stop();
             if (task.active) {
-                task.hideToolTip();
+            // TaskSpot (#11): re-hovering the task whose popup is already
+            // open must keep it (stock keeps the tooltip alive in that
+            // case); hovering a different group closes the old popup and
+            // opens a new one.
+            if (tasksRoot.searchPopup
+                && tasksRoot.searchPopup.task === task) {
+                return;
+            }
+            task.hideToolTip();
             }
             TaskManagerApplet.TaskTools.activateTask(modelIndex(), model, point.modifiers, task, Plasmoid, tasksRoot, effectWatcher.registered);
         }

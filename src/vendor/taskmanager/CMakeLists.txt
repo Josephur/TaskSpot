@@ -15,6 +15,7 @@ plasma_add_applet(org.kde.plasma.taskmanager
         qml/PlayerController.qml
         qml/PulseAudio.qml
         qml/ScrollableTextWrapper.qml
+        qml/SearchPopup.qml
         qml/TaskBadgeOverlay.qml
         qml/TaskList.qml
         qml/TaskProgressOverlay.qml
@@ -26,6 +27,7 @@ plasma_add_applet(org.kde.plasma.taskmanager
         qml/code/TaskTools.js
     CPP_SOURCES
         backend.cpp
+        filtermodel.cpp
         smartlauncherbackend.cpp
         smartlauncheritem.cpp
     RESOURCES

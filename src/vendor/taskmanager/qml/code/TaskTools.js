@@ -178,6 +178,16 @@ function activateTask(index, model, modifiers, task, plasmoid, tasks, windowView
         else if (plasmoid.configuration.groupedTaskVisualization === 1) {
             if (tasks.toolTipOpenedByClick) {
                 task.hideImmediately();
+            } else if (task.taskspotSearchEligible) {
+                // TaskSpot (#11): eligible groups have no stock tooltip to
+                // show (the ToolTipArea is inactive for them, and
+                // showToolTip() would be a no-op), so a click opens the
+                // search popup right away instead. The screen dimensions
+                // come from the task's scope, where the Screen attached
+                // property resolves to the panel's actual output.
+                task.hideToolTip();
+                createSearchPopup(task, tasks,
+                    task.taskspotPanelScreenWidth, task.taskspotPanelScreenHeight);
             } else {
                 tasks.toolTipOpenedByClick = task;
                 task.updateMainItemBindings(); // BUG 452187
@@ -255,7 +265,26 @@ function createGroupDialog(visualParent, tasks) {
         return;
     }
 
-    tasks.groupDialog = tasks.groupDialogComponent.createObject(tasks, { visualParent });
+    const dialog = tasks.groupDialogComponent.createObject(tasks, { visualParent });
+    if (!dialog) {
+        console.warn("[TaskSpot] createGroupDialog failed:", tasks.groupDialogComponent.errorString());
+    }
+    tasks.groupDialog = dialog;
+}
+
+function createSearchPopup(visualParent, tasks, panelScreenWidth, panelScreenHeight) {
+    if (tasks.searchPopup) {
+        tasks.searchPopup.visible = false;
+    }
+    const popup = tasks.searchPopupComponent.createObject(tasks, {
+        visualParent,
+        panelScreenWidth: panelScreenWidth || 0,
+        panelScreenHeight: panelScreenHeight || 0
+    });
+    if (!popup) {
+        console.warn("[TaskSpot] createSearchPopup failed:", tasks.searchPopupComponent.errorString());
+    }
+    tasks.searchPopup = popup;
 }
 
 function foreachChildTask(callback, modelIndex, tasksModel) {
