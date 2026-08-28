@@ -15,7 +15,7 @@ import org.kde.ksvg as KSvg
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
-import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 import org.kde.plasma.plasmoid
 
 import org.kde.taskmanager as TaskManager
@@ -294,7 +294,7 @@ PlasmaCore.ToolTipArea {
 
     onSmartLauncherEnabledChanged: {
         if (smartLauncherEnabled && !smartLauncherItem) {
-            const component = Qt.createComponent("plasma.applet.org.kde.plasma.taskmanager", "SmartLauncherItem");
+            const component = Qt.createComponent("plasma.applet.com.stack_tech.plasma.taskspot", "TaskSpotSmartLauncherItem");
             const smartLauncher = component.createObject(task);
             component.destroy();
 

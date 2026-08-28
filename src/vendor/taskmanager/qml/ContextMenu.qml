@@ -14,7 +14,7 @@ import org.kde.plasma.extras as PlasmaExtras
 
 import org.kde.taskmanager as TaskManager
 import org.kde.plasma.private.mpris as Mpris
-import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 
 PlasmaExtras.Menu {
     id: menu

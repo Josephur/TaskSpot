@@ -9,7 +9,7 @@ import QtQuick.Layouts
 
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
-import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 
 GridLayout {
     property bool animating: false

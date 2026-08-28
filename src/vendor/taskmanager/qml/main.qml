@@ -18,7 +18,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.workspace.trianglemousefilter
 
 import org.kde.taskmanager as TaskManager
-import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 import org.kde.plasma.workspace.dbus as DBus
 
 PlasmoidItem {
@@ -516,7 +516,7 @@ PlasmoidItem {
     // TaskSpot behavior must key off the applet ID so stock instances stay
     // 100% stock — same pattern kicker uses to tell itself apart from
     // kickerdash.
-    readonly property bool isTaskSpot: Plasmoid.pluginName === "org.kde.taskspot"
+    readonly property bool isTaskSpot: Plasmoid.pluginName === "com.stack-tech.plasma.taskspot"
 
     readonly property bool supportsLaunchers: true
 

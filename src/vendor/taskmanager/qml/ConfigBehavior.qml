@@ -103,25 +103,25 @@ KCMUtils.SimpleKCM {
         // TaskSpot (#14): search bar toggles, only for TaskSpot widgets.
         Item {
             Kirigami.FormData.isSection: true
-            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
         }
 
         QQC2.CheckBox {
             id: taskspotSearchEnabled
-            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
             Kirigami.FormData.label: i18nc("@label:check TaskSpot search bar", "Search:")
             text: i18nc("@option:check TaskSpot search bar", "Enable search bar")
         }
 
         QQC2.CheckBox {
             id: taskspotSearchHistoryEnabled
-            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
             text: i18nc("@option:check TaskSpot search history", "Keep search history")
             enabled: taskspotSearchEnabled.checked
         }
 
         QQC2.Button {
-            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
             text: i18nc("@button:clear TaskSpot search history", "Clear search history")
             icon.name: "edit-clear-history"
             enabled: taskspotSearchEnabled.checked && taskspotSearchHistoryEnabled.checked

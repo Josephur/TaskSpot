@@ -20,11 +20,19 @@ import org.kde.kirigami as Kirigami
 
 import org.kde.plasma.plasmoid
 
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
+
 Loader {
+
     id: toolTipDelegate
 
     property Task parentTask
     property /*QModelIndex*/var rootIndex
+
+    // The module import above is required for the annotation below: inside
+    // the plugin's qrc the directory's own qmldir provided it implicitly,
+    // but this file loads from the applet package (#18).
+    property TaskManagerApplet.TaskSpotFilterProxyModel filterModel: null
 
     property string appName
     property int pidParent
@@ -57,7 +65,6 @@ Loader {
     // below sits at the model root instead of under rootIndex, and the
     // delegate maps rows back with the proxy's sourceRow role. Stock
     // tooltip usage never sets it and keeps the raw tasksModel behavior.
-    property TaskFilterProxyModel filterModel: null
 
     // TaskSpot #14: forwarded from the card delegates; the search popup
     // listens to record a completed search.

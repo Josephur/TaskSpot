@@ -445,7 +445,7 @@ void Backend::handleRecentDocumentAction() const
                 // no service found to handle the mimetype
                 return;
             } else {
-                qCWarning(TASKMANAGER_DEBUG) << "Preventing the file to open with " << service->desktopEntryName() << "no alternative found";
+                qCWarning(TASKSPOT_DEBUG) << "Preventing the file to open with " << service->desktopEntryName() << "no alternative found";
             }
         }
     }
