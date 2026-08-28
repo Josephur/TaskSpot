@@ -15,7 +15,7 @@
       <default>true</default>
     </entry>
     <entry name="searchHistory" type="StringList">
-      <label>Completed search queries as JSON entries (query, use count, last used); most-used searches are promoted.</label>
+      <label>Completed search queries as JSON entries (query, use count, last used, app id); each app's group popup shows only its own entries, most-used searches promoted.</label>
       <default></default>
     </entry>
     <entry name="showOnlyCurrentScreen" type="Bool">

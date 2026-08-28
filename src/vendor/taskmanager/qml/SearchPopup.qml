@@ -98,11 +98,83 @@ PlasmaCore.PopupPlasmaWindow {
         searchPopup.visible = false;
     }
 
-    // TaskSpot #14: completed-search history. An entry is recorded only
-    // when a typed query lands somewhere (card click or Enter); persisted
-    // per widget as JSON blobs in the searchHistory config key; displayed
-    // most-used first so favorites migrate toward the textbox.
+    // TaskSpot #16: completed-search history, scoped per application. An
+    // entry is recorded only when a typed query lands somewhere (card
+    // click or Enter); persisted per widget as JSON blobs in the
+    // searchHistory config key, each tagged with the hovered group's app
+    // identity so a popup shows only the searches completed from that
+    // same app's popup. Displayed most-used first so favorites migrate
+    // toward the textbox.
     property var searchHistoryEntries: []
+
+    // TaskSpot #16: identity of the app whose history this popup shows:
+    // the .desktop id the task manager groups by (the same AppId
+    // filtermodel relocates groups by), falling back to AppName for
+    // windows that report no launcher. Both may be empty for
+    // unidentifiable windows; those share one bucket.
+    readonly property string historyAppId: {
+        const t = task
+        if (!t) {
+            return ""
+        }
+        const id = String(t.model.AppId ?? "")
+        return id !== "" ? id : String(t.model.AppName ?? "")
+    }
+
+    onHistoryAppIdChanged: refreshHistory()
+
+    // TaskSpot #16: rank key shared by display and persistence — usage
+    // count desc, then most recent use.
+    function rankNewerFirst(a, b) {
+        return (b.n - a.n) || (b.t - a.t)
+    }
+
+    // TaskSpot #16: parse the config key into entry objects. Entries
+    // without the app tag predate per-app scoping (#14 format) and
+    // cannot be attributed to an app; they are ignored and dropped on
+    // the next write.
+    function readStoredHistory() {
+        const raw = Plasmoid.configuration.searchHistory || []
+        const entries = []
+        for (const s of raw) {
+            try {
+                const o = JSON.parse(s)
+                if (o && o.q && typeof o.a === "string") {
+                    entries.push(o)
+                }
+            } catch (e) {}
+        }
+        return entries
+    }
+
+    // TaskSpot #16: write back while keeping every other app's entries:
+    // the caller passes the current app's entries already ranked, so the
+    // first 50 per app (this app's best, other apps' stored order) are
+    // kept. A global cap bounds the config key across many apps.
+    function writeStoredHistory(allEntries) {
+        const perAppCount = ({})
+        const kept = []
+        for (const e of allEntries) {
+            perAppCount[e.a] = (perAppCount[e.a] || 0) + 1
+            if (perAppCount[e.a] <= 50) {
+                kept.push(e)
+            }
+        }
+        if (kept.length > 400) {
+            kept.sort(rankNewerFirst)
+            kept.length = 400
+        }
+        Plasmoid.configuration.searchHistory = kept.map(e => JSON.stringify(e))
+    }
+
+    // TaskSpot #16: merge the current app's ranked entries back into the
+    // stored list without disturbing other apps', then reload the strip.
+    function commitAppEntries(appEntries) {
+        appEntries.sort(rankNewerFirst)
+        const others = readStoredHistory().filter(e => e.a !== historyAppId)
+        writeStoredHistory(others.concat(appEntries))
+        refreshHistory()
+    }
 
     function refreshHistory(): void {
         // TaskSpot #14: history paused → strip hidden; stored entries are
@@ -111,18 +183,9 @@ PlasmaCore.PopupPlasmaWindow {
             searchHistoryEntries = []
             return
         }
-        const raw = Plasmoid.configuration.searchHistory || []
-        const entries = []
-        for (const s of raw) {
-            try {
-                const o = JSON.parse(s)
-                if (o && o.q) {
-                    entries.push(o)
-                }
-            } catch (e) {}
-        }
-        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
-        searchHistoryEntries = entries
+        const mine = readStoredHistory().filter(e => e.a === historyAppId)
+        mine.sort(rankNewerFirst)
+        searchHistoryEntries = mine
     }
 
     function recordCompletedSearch(): void {
@@ -134,6 +197,8 @@ PlasmaCore.PopupPlasmaWindow {
             || Plasmoid.configuration.taskspotSearchHistoryEnabled === false) {
             return
         }
+        // TaskSpot #16: searchHistoryEntries already holds just this
+        // app's entries; new ones are tagged with this popup's app.
         const entries = searchHistoryEntries.slice()
         const now = Date.now()
         const existing = entries.find(e => e.q.toLowerCase() === q.toLowerCase())
@@ -142,11 +207,9 @@ PlasmaCore.PopupPlasmaWindow {
             existing.t = now
             existing.q = q // latest casing wins
         } else {
-            entries.push({ q: q, n: 1, t: now })
+            entries.push({ q: q, n: 1, t: now, a: historyAppId })
         }
-        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
-        Plasmoid.configuration.searchHistory = entries.slice(0, 50).map(e => JSON.stringify(e))
-        refreshHistory()
+        commitAppEntries(entries)
     }
 
     // TaskSpot #14: clicking a history label counts toward that entry's
@@ -159,9 +222,7 @@ PlasmaCore.PopupPlasmaWindow {
         }
         existing.n = (existing.n || 1) + 1
         existing.t = Date.now()
-        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
-        Plasmoid.configuration.searchHistory = entries.slice(0, 50).map(e => JSON.stringify(e))
-        refreshHistory()
+        commitAppEntries(entries)
     }
 
     Connections {
