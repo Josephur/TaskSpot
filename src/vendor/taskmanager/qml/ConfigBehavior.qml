@@ -36,6 +36,8 @@ KCMUtils.SimpleKCM {
     property alias cfg_minimizeActiveTaskOnClick: minimizeActive.checked
     property alias cfg_unhideOnAttention: unhideOnAttention.checked
     property alias cfg_reverseMode: reverseMode.checked
+    property alias cfg_taskspotSearchEnabled: taskspotSearchEnabled.checked
+    property alias cfg_taskspotSearchHistoryEnabled: taskspotSearchHistoryEnabled.checked
 
     headerPaddingEnabled: false
     header: ColumnLayout {
@@ -96,6 +98,36 @@ KCMUtils.SimpleKCM {
             visible: groupedTaskVisualization.currentIndex === 2 && !effectWatcher.registered
             type: Kirigami.MessageType.Warning
             text: i18nc("@info displayed as InlineMessage", "The compositor does not support displaying windows side by side, so a textual list will be displayed instead.")
+        }
+
+        // TaskSpot (#14): search bar toggles, only for TaskSpot widgets.
+        Item {
+            Kirigami.FormData.isSection: true
+            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+        }
+
+        QQC2.CheckBox {
+            id: taskspotSearchEnabled
+            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            Kirigami.FormData.label: i18nc("@label:check TaskSpot search bar", "Search:")
+            text: i18nc("@option:check TaskSpot search bar", "Enable search bar")
+        }
+
+        QQC2.CheckBox {
+            id: taskspotSearchHistoryEnabled
+            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            text: i18nc("@option:check TaskSpot search history", "Keep search history")
+            enabled: taskspotSearchEnabled.checked
+        }
+
+        QQC2.Button {
+            visible: (Plasmoid.pluginName === "org.kde.taskspot")
+            text: i18nc("@button:clear TaskSpot search history", "Clear search history")
+            icon.name: "edit-clear-history"
+            enabled: taskspotSearchEnabled.checked && taskspotSearchHistoryEnabled.checked
+                     && (Plasmoid.configuration.searchHistory !== undefined
+                         && Plasmoid.configuration.searchHistory.length > 0)
+            onClicked: Plasmoid.configuration.searchHistory = []
         }
 
         Item {

@@ -6,6 +6,18 @@
   <kcfgfile name=""/>
 
   <group name="General">
+    <entry name="taskspotSearchEnabled" type="Bool">
+      <label>Whether hovering grouped tasks opens the TaskSpot search popup.</label>
+      <default>true</default>
+    </entry>
+    <entry name="taskspotSearchHistoryEnabled" type="Bool">
+      <label>Whether completed searches are recorded and shown in the history strip.</label>
+      <default>true</default>
+    </entry>
+    <entry name="searchHistory" type="StringList">
+      <label>Completed search queries as JSON entries (query, use count, last used); most-used searches are promoted.</label>
+      <default></default>
+    </entry>
     <entry name="showOnlyCurrentScreen" type="Bool">
       <label>Whether to show only window tasks that are on the same screen as the widget.</label>
       <default>false</default>

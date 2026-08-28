@@ -38,6 +38,10 @@ ColumnLayout {
     property bool hasTrackInATitle: false
     property int orientation: ListView.Vertical // vertical for compact single-window tooltips
 
+    // TaskSpot #14: forwarded from the per-card mouse area so the hosting
+    // popup can record a completed search.
+    signal cardActivated()
+
     // HACK: Avoid blank space in the tooltip after closing a window
     ListView.onPooled: width = height = 0
     ListView.onReused: width = height = undefined
@@ -400,6 +404,7 @@ ColumnLayout {
                 rootTask: toolTipDelegate.parentTask
                 modelIndex: root.submodelIndex
                 winId: thumbnailSourceItem.winId
+                onCardActivated: root.cardActivated()
             }
         }
     }

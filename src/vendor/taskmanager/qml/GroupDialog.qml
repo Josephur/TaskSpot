@@ -275,15 +275,14 @@ PlasmaCore.PopupPlasmaWindow {
                                                       * (TaskManagerApplet.LayoutMetrics.verticalMargins() + Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium))
 
                     // TaskSpot: live-filtered view of this group's windows.
+                    // groupRow is a plain int property — Q_INVOKABLE methods
+                    // on this registered type were observed invisible to the
+                    // QML engine (#12), while properties kept working.
                     model: TaskManagerApplet.TaskFilterProxyModel {
                         id: taskFilterModel
 
                         sourceModel: tasksModel
-                        // groupIndex is set via invokable, not Q_PROPERTY
-                        // (qmltyperegistrar drops QModelIndex-typed
-                        // Q_PROPERTYs from .qmltypes, which then surfaces
-                        // as "Element is not creatable" at runtime).
-                        Component.onCompleted: setGroupIndex(tasksModel.makeModelIndex((groupDialog.visualParent as Task).index))
+                        groupRow: (groupDialog.visualParent as Task).index
                     }
 
                     DelegateModel {

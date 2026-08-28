@@ -51,6 +51,18 @@ Loader {
 
     property bool blockingUpdates: false
 
+    // TaskSpot (#12): when set (SearchPopup only), the group card list is
+    // driven through this already-filtered proxy of the group's child
+    // windows. The proxy's rows ARE the children, so the DelegateModel
+    // below sits at the model root instead of under rootIndex, and the
+    // delegate maps rows back with the proxy's sourceRow role. Stock
+    // tooltip usage never sets it and keeps the raw tasksModel behavior.
+    property TaskFilterProxyModel filterModel: null
+
+    // TaskSpot #14: forwarded from the card delegates; the search popup
+    // listens to record a completed search.
+    signal cardActivated()
+
     readonly property bool isVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     // This number controls the overall size of the window tooltips
     readonly property int tooltipInstanceMaximumWidth: Kirigami.Units.gridUnit * 16
@@ -148,9 +160,14 @@ Loader {
                 readonly property real estimatedWidth: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? 1 : count) * (toolTipDelegate.tooltipInstanceMaximumWidth + Kirigami.Units.gridUnit) - Kirigami.Units.gridUnit
                 readonly property real estimatedHeight: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? count : 1) * (Plasmoid.configuration.showToolTips ? (toolTipDelegate.tooltipInstanceMaximumWidth / 2 + Kirigami.Units.gridUnit) : Kirigami.Units.gridUnit * 2) - Kirigami.Units.gridUnit
 
-                model: tasksModel
+                // TaskSpot (#12): behind the filter proxy the rows are the
+                // group's children themselves, so the root index is the
+                // model root (makeModelIndex(-1) is an invalid QModelIndex);
+                // with plain tasksModel the children live under rootIndex.
+                model: toolTipDelegate.filterModel ?? tasksModel
 
-                rootIndex: toolTipDelegate.rootIndex
+                rootIndex: toolTipDelegate.filterModel
+                    ? tasksModel.makeModelIndex(-1) : toolTipDelegate.rootIndex
                 onRootIndexChanged: {
                     if (parentTask.model.IsActive) {
                             groupToolTipListView.positionViewAtIndex(tasksModel.activeTask.row, ListView.Center)
@@ -160,16 +177,26 @@ Loader {
                 }
 
                 delegate: ToolTipInstance {
-                    submodelIndex: tasksModel.makeModelIndex(toolTipDelegate.rootIndex.row, index)
+                    // TaskSpot (#12): behind the filter proxy, filtered rows
+                    // map back to real child rows via the proxy's sourceRow
+                    // role; with plain tasksModel sourceRow is undefined and
+                    // index is already the child row (same mapping Task.qml
+                    // uses inside the group dialog).
+                    submodelIndex: tasksModel.makeModelIndex(toolTipDelegate.rootIndex.row,
+                        (model.sourceRow !== undefined && model.sourceRow >= 0) ? model.sourceRow : index)
                     appPid: model.AppPid
                     // 'display' is required already
                     isMinimized: model.IsMinimized
-                    isReadyForPainting: model.Geometry.width > 0 && model.Geometry.height > 0
+                    // TaskSpot: Geometry can be undefined for some tasks;
+                    // a throw here would break the whole delegate (#11).
+                    isReadyForPainting: (model.Geometry?.width ?? 0) > 0
+                        && (model.Geometry?.height ?? 0) > 0
                     isOnAllVirtualDesktops: model.IsOnAllVirtualDesktops
                     virtualDesktops: model.VirtualDesktops
                     activities: model.Activities
                     hasTrackInATitle: groupToolTipListView.hasTrackInATitle
                     orientation: groupToolTipListView.orientation
+                    onCardActivated: toolTipDelegate.cardActivated()
                 }
             }
         }

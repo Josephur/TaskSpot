@@ -93,6 +93,7 @@ PlasmaCore.ToolTipArea {
     // popup lands on top of it a moment later. Gated on the TaskSpot applet
     // identity (#10) so stock task manager instances never see any of this.
     readonly property bool taskspotSearchEligible: tasksRoot.isTaskSpot
+        && Plasmoid.configuration.taskspotSearchEnabled !== false
         && Plasmoid.configuration.groupedTaskVisualization === 1
         && model.IsGroupParent && model.ChildCount >= 2
 

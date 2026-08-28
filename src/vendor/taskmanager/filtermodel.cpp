@@ -6,6 +6,8 @@
 
 #include "filtermodel.h"
 
+#include <taskmanager/abstracttasksmodel.h>
+
 TaskFilterProxyModel::TaskFilterProxyModel(QObject *parent)
     : QAbstractProxyModel(parent)
 {
@@ -33,14 +35,52 @@ QModelIndex TaskFilterProxyModel::groupIndex() const
     return m_groupIndex;
 }
 
-void TaskFilterProxyModel::setGroupIndex(const QModelIndex &groupIndex)
+bool TaskFilterProxyModel::fallbackToUnfiltered() const
 {
-    if (m_groupIndex == groupIndex) {
+    return m_fallbackToUnfiltered;
+}
+
+void TaskFilterProxyModel::setFallbackToUnfiltered(bool fallback)
+{
+    if (m_fallbackToUnfiltered == fallback) {
         return;
     }
-    m_groupIndex = QPersistentModelIndex(groupIndex);
-    Q_EMIT groupIndexChanged();
+    m_fallbackToUnfiltered = fallback;
+    Q_EMIT fallbackToUnfilteredChanged();
     rebuild();
+}
+
+bool TaskFilterProxyModel::showingUnfiltered() const
+{
+    return m_showingUnfiltered;
+}
+
+int TaskFilterProxyModel::groupRow() const
+{
+    return m_groupRow;
+}
+
+void TaskFilterProxyModel::setGroupRow(int row)
+{
+    if (m_groupRow == row) {
+        return;
+    }
+    // Only store the row; rebuild() performs all resolution against the
+    // source model, so property-binding evaluation order (sourceModel vs
+    // groupRow) never matters.
+    m_groupRow = row;
+    Q_EMIT groupRowChanged();
+    rebuild();
+}
+
+QVariantList TaskFilterProxyModel::sourceRows() const
+{
+    QVariantList rows;
+    rows.reserve(m_rows.count());
+    for (int row : m_rows) {
+        rows.append(row);
+    }
+    return rows;
 }
 
 void TaskFilterProxyModel::setSourceModel(QAbstractItemModel *source)
@@ -64,24 +104,84 @@ void TaskFilterProxyModel::setSourceModel(QAbstractItemModel *source)
 
 void TaskFilterProxyModel::rebuild()
 {
-    beginResetModel();
-    m_rows.clear();
+    // Locate the group task. The int row seeds the first resolution;
+    // afterwards the group is re-located by its AppId (one group task per
+    // app), which survives the tasks model's activation-driven re-sorting
+    // and window churn that invalidates both the row and the persistent
+    // index. If no AppId is known yet, trust the row. This must be
+    // total: any path that leaves the group unresolved renders the whole
+    // popup empty (#12).
+    m_groupIndex = QPersistentModelIndex();
+    if (sourceModel() && m_groupRow >= 0 && m_groupRow < sourceModel()->rowCount()) {
+        int locatedRow = -1;
+        if (!m_groupAppId.isEmpty()) {
+            for (int r = 0; r < sourceModel()->rowCount(); ++r) {
+                const QModelIndex idx = sourceModel()->index(r, 0);
+                if (idx.data(TaskManager::AbstractTasksModel::AppId).toString() == m_groupAppId
+                    && sourceModel()->rowCount(idx) > 0) {
+                    locatedRow = r;
+                    break;
+                }
+            }
+        }
+        if (locatedRow < 0) {
+            const QModelIndex candidate = sourceModel()->index(m_groupRow, 0);
+            const QString candidateAppId = candidate.data(TaskManager::AbstractTasksModel::AppId).toString();
+            if (m_groupAppId.isEmpty() || candidateAppId == m_groupAppId) {
+                locatedRow = m_groupRow;
+            }
+        }
+        if (locatedRow >= 0) {
+            m_groupIndex = QPersistentModelIndex(sourceModel()->index(locatedRow, 0));
+            m_groupAppId = m_groupIndex.data(TaskManager::AbstractTasksModel::AppId).toString();
+        }
+    }
+    QList<int> newRows;
+    bool showingUnfiltered = false;
     if (const QAbstractItemModel *source = sourceModel(); source && m_groupIndex.isValid()) {
         const int count = source->rowCount(m_groupIndex);
-        m_rows.reserve(count);
+        newRows.reserve(count);
         for (int row = 0; row < count; ++row) {
             if (m_filter.isEmpty()) {
-                m_rows.append(row);
+                newRows.append(row);
                 continue;
             }
             const QString title =
                 source->index(row, 0, m_groupIndex).data(Qt::DisplayRole).toString();
             if (title.contains(m_filter, Qt::CaseInsensitive)) {
-                m_rows.append(row);
+                newRows.append(row);
             }
         }
+        // TaskSpot (#12): a filter that matches nothing falls back to the
+        // full child list instead of an empty popup, when enabled.
+        if (newRows.isEmpty() && m_fallbackToUnfiltered) {
+            for (int row = 0; row < count; ++row) {
+                newRows.append(row);
+            }
+            showingUnfiltered = true;
+        }
     }
-    endResetModel();
+
+    // TaskSpot (#12): the tasks model emits dataChanged constantly (active
+    // window flips, titles tick). A full reset for every one of those tore
+    // the card delegates down faster than their PipeWire thumbnail streams
+    // could establish, leaving only fallback icons. When the row set is
+    // unchanged, refresh roles in place instead of resetting.
+    if (newRows == m_rows) {
+        if (!newRows.isEmpty()) {
+            Q_EMIT dataChanged(index(0, 0), index(newRows.count() - 1, 0),
+                               QVector<int>() << Qt::DisplayRole);
+        }
+    } else {
+        beginResetModel();
+        m_rows = newRows;
+        endResetModel();
+    }
+    Q_EMIT sourceRowsChanged();
+    if (showingUnfiltered != m_showingUnfiltered) {
+        m_showingUnfiltered = showingUnfiltered;
+        Q_EMIT showingUnfilteredChanged();
+    }
 }
 
 int TaskFilterProxyModel::rowCount(const QModelIndex &parent) const
@@ -120,7 +220,13 @@ QVariant TaskFilterProxyModel::data(const QModelIndex &proxyIndex, int role) con
         }
         return m_rows.at(proxyIndex.row());
     }
-    return QAbstractProxyModel::data(mapToSource(proxyIndex), role);
+    // Forward explicitly: the QAbstractProxyModel base behavior combined
+    // with a transiently invalid group index surfaced as undefined roles
+    // in the card delegates ("undefined" window titles — #12).
+    const QModelIndex sourceIndex = mapToSource(proxyIndex);
+    return sourceIndex.isValid() && sourceModel()
+        ? sourceModel()->data(sourceIndex, role)
+        : QVariant();
 }
 
 QHash<int, QByteArray> TaskFilterProxyModel::roleNames() const

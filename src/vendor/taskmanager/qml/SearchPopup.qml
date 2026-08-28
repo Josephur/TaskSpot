@@ -27,9 +27,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
+import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
 
 PlasmaCore.PopupPlasmaWindow {
     id: searchPopup
@@ -61,6 +63,112 @@ PlasmaCore.PopupPlasmaWindow {
             return Qt.LeftEdge
         default:
             return Qt.TopEdge
+    }
+
+    // TaskSpot #12: live-filtered view of the hovered group's child
+    // windows, fed to the ToolTipDelegate (see filterModel there). The
+    // filter tracks the search field; a filter matching nothing falls
+    // back to the full child list (fallbackToUnfiltered) so the popup
+    // never goes empty — showingUnfiltered lets Enter ignore fallback
+    // rows that are not real results. groupRow is a plain int property:
+    // Q_INVOKABLE methods on this registered type were observed invisible
+    // to the QML engine, while properties kept working.
+    TaskManagerApplet.TaskFilterProxyModel {
+        id: taskFilterModel
+
+        sourceModel: tasksModel
+        filter: searchField.text
+        fallbackToUnfiltered: true
+        groupRow: searchPopup.task.index
+    }
+
+    // TaskSpot #12: Enter activates the first real search result (never
+    // fallback rows) and closes the popup, GroupDialog-style.
+    function activateFirstResult(): void {
+        if (searchField.text === "" || taskFilterModel.showingUnfiltered
+            || taskFilterModel.sourceRows.length <= 0) {
+            return;
+        }
+        const childRow = taskFilterModel.sourceRows[0];
+        if (childRow < 0) {
+            return;
+        }
+        recordCompletedSearch();
+        tasksModel.requestActivate(tasksModel.makeModelIndex(searchPopup.task.index, childRow));
+        searchPopup.visible = false;
+    }
+
+    // TaskSpot #14: completed-search history. An entry is recorded only
+    // when a typed query lands somewhere (card click or Enter); persisted
+    // per widget as JSON blobs in the searchHistory config key; displayed
+    // most-used first so favorites migrate toward the textbox.
+    property var searchHistoryEntries: []
+
+    function refreshHistory(): void {
+        // TaskSpot #14: history paused → strip hidden; stored entries are
+        // retained so re-enabling restores the labels.
+        if (Plasmoid.configuration.taskspotSearchHistoryEnabled === false) {
+            searchHistoryEntries = []
+            return
+        }
+        const raw = Plasmoid.configuration.searchHistory || []
+        const entries = []
+        for (const s of raw) {
+            try {
+                const o = JSON.parse(s)
+                if (o && o.q) {
+                    entries.push(o)
+                }
+            } catch (e) {}
+        }
+        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
+        searchHistoryEntries = entries
+    }
+
+    function recordCompletedSearch(): void {
+        const q = searchField.text.trim()
+        // TaskSpot #14: a fallback search (nothing matched, all cards
+        // shown) is not a completed search — only queries that actually
+        // matched a card get recorded. Paused history records nothing.
+        if (q === "" || taskFilterModel.showingUnfiltered
+            || Plasmoid.configuration.taskspotSearchHistoryEnabled === false) {
+            return
+        }
+        const entries = searchHistoryEntries.slice()
+        const now = Date.now()
+        const existing = entries.find(e => e.q.toLowerCase() === q.toLowerCase())
+        if (existing) {
+            existing.n = (existing.n || 1) + 1
+            existing.t = now
+            existing.q = q // latest casing wins
+        } else {
+            entries.push({ q: q, n: 1, t: now })
+        }
+        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
+        Plasmoid.configuration.searchHistory = entries.slice(0, 50).map(e => JSON.stringify(e))
+        refreshHistory()
+    }
+
+    // TaskSpot #14: clicking a history label counts toward that entry's
+    // usage, promoting it (count desc, then recency) closer to the box.
+    function bumpHistoryEntry(query: string): void {
+        const entries = searchHistoryEntries.slice()
+        const existing = entries.find(e => e.q.toLowerCase() === query.toLowerCase())
+        if (!existing) {
+            return
+        }
+        existing.n = (existing.n || 1) + 1
+        existing.t = Date.now()
+        entries.sort((a, b) => (b.n - a.n) || (b.t - a.t))
+        Plasmoid.configuration.searchHistory = entries.slice(0, 50).map(e => JSON.stringify(e))
+        refreshHistory()
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+        function onSearchHistoryChanged() {
+            searchPopup.refreshHistory()
+        }
     }
 
     // TaskSpot #11: the monitor this popup must stay on, passed in from
@@ -148,13 +256,46 @@ PlasmaCore.PopupPlasmaWindow {
 
         spacing: Kirigami.Units.smallSpacing
 
-        PlasmaExtras.SearchField {
-            id: searchField
-
+        // TaskSpot #14: search field at a natural width, with the
+        // completed-search history strip filling the rest of the popup
+        // width. Labels are buttons (border + hover/press = clickable
+        // separate items); clicking one re-runs that search.
+        RowLayout {
             Layout.fillWidth: true
-            placeholderText: i18n("Search windows…")
+            spacing: Kirigami.Units.smallSpacing
 
-            Keys.onEscapePressed: searchPopup.visible = false
+            PlasmaExtras.SearchField {
+                id: searchField
+
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 16
+                Layout.alignment: Qt.AlignVCenter
+                placeholderText: i18n("Search windows…")
+
+                Keys.onEscapePressed: searchPopup.visible = false
+                Keys.onReturnPressed: searchPopup.activateFirstResult()
+                Keys.onEnterPressed: searchPopup.activateFirstResult()
+            }
+
+            ListView {
+                id: historyStrip
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                orientation: ListView.Horizontal
+                spacing: Kirigami.Units.smallSpacing
+                model: searchPopup.searchHistoryEntries
+
+                delegate: PlasmaComponents3.Button {
+                    required property var modelData
+
+                    text: modelData.q
+                    onClicked: {
+                        searchPopup.bumpHistoryEntry(modelData.q)
+                        searchField.text = modelData.q
+                    }
+                }
+            }
         }
 
         // The same component the stock tooltip renders, with the same
@@ -193,6 +334,12 @@ PlasmaCore.PopupPlasmaWindow {
 
             parentTask: searchPopup.task
             rootIndex: tasksModel.makeModelIndex(searchPopup.task.index, -1)
+
+            // TaskSpot #12: route the card list through the live filter.
+            filterModel: taskFilterModel
+
+            // TaskSpot #14: a card click completes the typed search.
+            onCardActivated: searchPopup.recordCompletedSearch()
 
             appName: searchPopup.task.model.AppName
             pidParent: searchPopup.task.model.AppPid
@@ -238,6 +385,13 @@ PlasmaCore.PopupPlasmaWindow {
             const step = notch * Kirigami.Units.gridUnit * 4
             list.contentX = Math.max(0, Math.min(list.contentX - step,
                                                  list.contentWidth - list.width))
+            // TaskSpot #14: scroll the history strip along with the cards
+            // when it overflows too.
+            if (historyStrip.contentWidth > historyStrip.width) {
+                historyStrip.contentX = Math.max(0,
+                    Math.min(historyStrip.contentX - step,
+                             historyStrip.contentWidth - historyStrip.width))
+            }
             event.accepted = true
         }
     }
@@ -248,6 +402,10 @@ PlasmaCore.PopupPlasmaWindow {
         // size rather than being shown at a transient default and then
         // resized (see GroupDialog.qml for the visible-assignment rule).
         updateSize();
+        // TaskSpot #14: load the persisted history — each hover creates a
+        // fresh popup instance, and the config-change connection below
+        // only fires on writes made during this popup's lifetime.
+        refreshHistory();
         visible = true;
     }
 

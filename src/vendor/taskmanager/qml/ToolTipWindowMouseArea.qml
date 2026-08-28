@@ -19,9 +19,15 @@ MouseArea {
     hoverEnabled: true
     enabled: winId !== undefined
 
+    // TaskSpot #14: emitted when the window card is activated with the
+    // left button; the search popup listens to record a completed search.
+    // Stock tooltip usage leaves it unlistened.
+    signal cardActivated()
+
     onClicked: (mouse) => {
         switch (mouse.button) {
         case Qt.LeftButton:
+            cardActivated();
             tasksModel.requestActivate(modelIndex);
             rootTask.hideImmediately();
             tasks.cancelHighlightWindows();
