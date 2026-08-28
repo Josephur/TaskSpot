@@ -11,7 +11,7 @@
 
 #include "log_settings.h"
 
-using namespace SmartLauncher;
+using namespace TaskSpot::SmartLauncher;
 
 Item::Item(QObject *parent)
     : QObject(parent)

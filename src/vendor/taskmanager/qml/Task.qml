@@ -509,15 +509,15 @@ PlasmaCore.ToolTipArea {
         acceptedButtons: Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
         onTapped: (eventPoint, button) => {
             if (button === Qt.MiddleButton) {
-                if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.NewInstance) {
+                if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.TaskSpotBackend.NewInstance) {
                     tasksModel.requestNewInstance(modelIndex());
-                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.Close) {
+                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.TaskSpotBackend.Close) {
                     tasksModel.requestClose(modelIndex());
-                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.ToggleMinimized) {
+                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.TaskSpotBackend.ToggleMinimized) {
                     tasksModel.requestToggleMinimized(modelIndex());
-                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.ToggleGrouping) {
+                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.TaskSpotBackend.ToggleGrouping) {
                     tasksModel.requestToggleGrouping(modelIndex());
-                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.Backend.BringToCurrentDesktop) {
+                } else if (Plasmoid.configuration.middleClickAction === TaskManagerApplet.TaskSpotBackend.BringToCurrentDesktop) {
                     TaskManagerApplet.TaskTools.foreachChildTask((childIndex) => {
                         tasksModel.requestVirtualDesktops(childIndex, [virtualDesktopInfo.currentDesktopByScreenGeometry(tasksModel.data(childIndex, TaskManager.AbstractTasksModel.ScreenGeometry))]);
                     }, modelIndex(), tasksModel);

@@ -21,7 +21,7 @@
 #include "log_settings.h"
 #include <settings.h>
 
-using namespace SmartLauncher;
+using namespace TaskSpot::SmartLauncher;
 using namespace NotificationManager;
 
 Backend::Backend(QObject *parent)

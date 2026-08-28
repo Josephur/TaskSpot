@@ -230,7 +230,7 @@ PlasmoidItem {
         }
     }
 
-    readonly property TaskManagerApplet.Backend backend: TaskManagerApplet.Backend {
+    readonly property TaskManagerApplet.TaskSpotBackend backend: TaskManagerApplet.TaskSpotBackend {
         id: backend
 
         onAddLauncher: url => {

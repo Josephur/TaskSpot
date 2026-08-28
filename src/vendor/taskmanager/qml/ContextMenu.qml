@@ -19,7 +19,7 @@ import plasma.applet.org.kde.plasma.taskmanager as TaskManagerApplet
 PlasmaExtras.Menu {
     id: menu
 
-    required property TaskManagerApplet.Backend backend
+    required property TaskManagerApplet.TaskSpotBackend backend
     required property Mpris.Mpris2Model mpris2Source
     required property /*QModelIndex*/var modelIndex
 

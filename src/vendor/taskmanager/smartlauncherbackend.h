@@ -21,7 +21,7 @@ namespace NotificationManager
 class Settings;
 }
 
-namespace SmartLauncher
+namespace TaskSpot::SmartLauncher
 {
 struct Entry {
     int count = 0;
@@ -117,4 +117,4 @@ private:
     bool m_available = false;
 };
 
-} // namespace SmartLauncher
+} // namespace TaskSpot::SmartLauncher

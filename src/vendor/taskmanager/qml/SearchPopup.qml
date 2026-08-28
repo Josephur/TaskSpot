@@ -73,7 +73,7 @@ PlasmaCore.PopupPlasmaWindow {
     // rows that are not real results. groupRow is a plain int property:
     // Q_INVOKABLE methods on this registered type were observed invisible
     // to the QML engine, while properties kept working.
-    TaskManagerApplet.TaskFilterProxyModel {
+    TaskManagerApplet.TaskSpotFilterProxyModel {
         id: taskFilterModel
 
         sourceModel: tasksModel

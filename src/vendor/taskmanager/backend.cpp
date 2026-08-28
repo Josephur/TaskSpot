@@ -48,6 +48,9 @@ using namespace KAStats::Terms;
 
 static constexpr int NoApplications = 2; // kactivitymanager StatsPlugin WhatToRemember.
 
+namespace TaskSpot
+{
+
 Backend::Backend(QObject *parent)
     : QObject(parent)
     , m_actionGroup(new QActionGroup(this))
@@ -517,5 +520,7 @@ qint64 Backend::parentPid(qint64 pid) const
 
     return -1;
 }
+
+} // namespace TaskSpot
 
 #include "moc_backend.cpp"

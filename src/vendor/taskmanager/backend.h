@@ -28,10 +28,18 @@ namespace KActivities
 class Consumer;
 }
 
+namespace TaskSpot
+{
+
 class Backend : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
+    // Named element (not the namespace-derived default): the QML engine
+    // resolves only single-segment type names through an import alias, so
+    // the distinct-but-unqualified name is required — and it must differ
+    // from the stock plugin's "Backend" (#10, #18).
+    QML_NAMED_ELEMENT(TaskSpotBackend)
 
 public:
     enum MiddleClickAction {
@@ -79,3 +87,5 @@ private:
     KActivityManagerdPluginsSettings m_activityManagerPluginsSettings;
     KConfigWatcher::Ptr m_activityManagerPluginsSettingsWatcher;
 };
+
+} // namespace TaskSpot

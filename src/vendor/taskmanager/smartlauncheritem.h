@@ -13,13 +13,13 @@
 
 #include "smartlauncherbackend.h"
 
-namespace SmartLauncher
+namespace TaskSpot::SmartLauncher
 {
 
 class Item : public QObject
 {
     Q_OBJECT
-    QML_NAMED_ELEMENT(SmartLauncherItem)
+    QML_NAMED_ELEMENT(TaskSpotSmartLauncherItem)
 
     Q_PROPERTY(QUrl launcherUrl READ launcherUrl WRITE setLauncherUrl NOTIFY launcherUrlChanged)
 
@@ -79,4 +79,4 @@ private:
     bool m_urgent = false;
 };
 
-} // namespace SmartLauncher
+} // namespace TaskSpot::SmartLauncher

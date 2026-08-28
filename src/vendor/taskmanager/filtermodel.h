@@ -14,10 +14,15 @@
 #include <QString>
 #include <qqmlintegration.h>
 
+namespace TaskSpot
+{
+
 class TaskFilterProxyModel : public QAbstractProxyModel
 {
     Q_OBJECT
     QML_ELEMENT
+    // See Backend: distinct unqualified QML name (#10, #18).
+    QML_NAMED_ELEMENT(TaskSpotFilterProxyModel)
 
     /**
      * Case-insensitive title substring; empty accepts every window.
@@ -110,3 +115,5 @@ private:
     QPersistentModelIndex m_groupIndex;
     QList<int> m_rows;
 };
+
+} // namespace TaskSpot

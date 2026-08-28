@@ -8,6 +8,9 @@
 
 #include <taskmanager/abstracttasksmodel.h>
 
+namespace TaskSpot
+{
+
 TaskFilterProxyModel::TaskFilterProxyModel(QObject *parent)
     : QAbstractProxyModel(parent)
 {
@@ -259,5 +262,7 @@ QModelIndex TaskFilterProxyModel::mapFromSource(const QModelIndex &sourceIndex) 
     }
     return index(proxyRow, 0);
 }
+
+} // namespace TaskSpot
 
 #include "moc_filtermodel.cpp"
