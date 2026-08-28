@@ -12,9 +12,9 @@ the right browser window.
 - No new browser extension: TaskSpot consumes the DBus API that Plasma
   Browser Integration already ships (`org.kde.plasma.browser_integration`,
   `/TabsRunner`).
-- No system file modification: TaskSpot installs a user-local build of the
-  task manager plugin (same plugin ID) that shadows the system one;
-  deleting it restores stock behavior.
+- No system file modification: TaskSpot installs its own widget plugin
+  (`com.stack-tech.plasma.taskspot`) user-locally; deleting it (and
+  removing the widgets) restores a stock system.
 
 Status: work in progress — see the issue tracker for the running
 development history and `docs/superpowers/specs/` for design documents.
@@ -22,7 +22,7 @@ development history and `docs/superpowers/specs/` for design documents.
 ## Requirements
 
 - Plasma 6 (developed against 6.7.x) on Wayland
-- plasma-workspace (provides the task manager plugin being shadowed)
+- plasma-workspace
 - For browser-tab search: `plasma-browser-integration` package plus the
   "Plasma Integration" browser extension (Firefox: AMO; Chrome-family:
   Web Store)

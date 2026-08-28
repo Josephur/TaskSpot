@@ -156,3 +156,34 @@ panel (A/B control).
   snippet idempotent (skip if no old-ID applets found).
 - Any stale `~/.local` artifacts not covered above are swept by listing
   the install tree before/after deploy.
+
+## As-built amendments (implementation, 2026-08-28)
+
+Two spec assumptions failed empirically and were resolved as follows:
+
+1. **Namespace-qualified QML names don't resolve through an import
+   alias.** `TaskManagerApplet.TaskSpot.Backend` failed at runtime
+   ("TaskSpot is not a type"): the QML engine resolves only
+   single-segment type names behind an import alias, and the qmldir
+   carries no C++ type entries to help it. The documented fallback was
+   applied instead: distinct **unqualified** element names via
+   `QML_NAMED_ELEMENT` — `TaskSpotBackend`, `TaskSpotFilterProxyModel`,
+   `TaskSpotSmartLauncherItem` (the last because stock registers plain
+   `SmartLauncherItem`; equal names would recreate the #10 condition).
+   C++ types remain `TaskSpot::{...}`.
+2. **The applet needs a real plasmoid package.** The embedded-QML load
+   path (`Applet::qrcPath()`, libplasma applet.cpp) derives its qrc root
+   from the dashed plugin id — `:/qt/qml/plasma/applet/com/stack-tech/…`
+   — which can never reach the underscored module URI
+   (`…/com/stack_tech/…`). Without a package, loading failed ("package
+   does not exist"). Resolution: TaskSpot ships a normal applet package
+   (`src/packages/com.stack-tech.plasma.taskspot/`): package metadata +
+   `contents/ui/*.qml` + `contents/config/main.xml`, all installed from
+   the single-copy vendored sources (nothing duplicated in git). The
+   compiled module keeps only the C++ types and the TaskTools/
+   LayoutMetrics JS libraries (accessed through the import alias). The
+   `X-Plasma-RootPath` trick remains retired — this is the ordinary,
+   distributable KPackage + C++ applet shape.
+   - Consequence: QML files that relied on the qrc directory's implicit
+     qmldir import needed an explicit module import (ToolTipDelegate.qml).
+
