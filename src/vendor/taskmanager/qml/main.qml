@@ -550,13 +550,17 @@ PlasmoidItem {
     }
 
     function createContextMenu(rootTask, modelIndex, args = {}) {
-        const initialArgs = Object.assign(args, {
+        // TaskSpot (#19): args may override the defaults (e.g. parentItem,
+        // so a menu created for a card living in the search popup gets the
+        // popup window as its Wayland transient parent). Pre-#19 the merge
+        // order silently made the defaults win, so args could only add.
+        const initialArgs = Object.assign({
             visualParent: rootTask,
             modelIndex,
             mpris2Source,
             backend,
-        });
-        return contextMenuComponent.createObject(rootTask, initialArgs);
+        }, args);
+        return contextMenuComponent.createObject(args.parentItem ?? rootTask, initialArgs);
     }
 
     function shouldBeMirrored(reverseMode, layoutDirection, vertical): bool {

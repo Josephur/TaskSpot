@@ -282,11 +282,28 @@ PlasmaCore.PopupPlasmaWindow {
     // task button being clicked again. The HoverHandler lives inside the
     // mainItem: a window-level one would need hoverEnabled, which is an
     // Item property, not a handler property here.
+    //
+    // TaskSpot #19: a card's context menu is a separate popup window whose
+    // grab ends hover on this window (and can take activation), which
+    // would trip both dismissal paths below and kill the menu with the
+    // popup. The right-click handler in ToolTipWindowMouseArea raises
+    // menuOpen for the menu's lifetime; dismissal resumes when it closes.
+    property bool menuOpen: false
+
+    onMenuOpenChanged: {
+        if (!menuOpen && !popupHover.hovered) {
+            closeGraceTimer.restart();
+        }
+    }
+
     Timer {
         id: closeGraceTimer
 
         interval: 300
         onTriggered: {
+            if (searchPopup.menuOpen) {
+                return;
+            }
             if (searchField.text === ""
                 && !(searchPopup.task && searchPopup.task.containsMouse)) {
                 searchPopup.visible = false
@@ -481,7 +498,9 @@ PlasmaCore.PopupPlasmaWindow {
     }
 
     onActiveChanged: {
-        if (!active) {
+        // TaskSpot #19: a card's context menu may take activation; don't
+        // kill the popup (and the menu with it) while the menu is open.
+        if (!active && !menuOpen) {
             visible = false;
         }
     }

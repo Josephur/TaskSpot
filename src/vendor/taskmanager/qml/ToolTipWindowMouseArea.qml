@@ -9,8 +9,11 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import org.kde.plasma.extras as PlasmaExtras
 
 MouseArea {
+    id: cardMouseArea
+
     required property /*QModelIndex*/var modelIndex
     required property /*undefined|WId where WId = int|string*/ var winId
     required property Task rootTask
@@ -36,9 +39,29 @@ MouseArea {
             tasks.cancelHighlightWindows();
             tasksModel.requestClose(modelIndex);
             break;
-        case Qt.RightButton:
-            tasks.createContextMenu(rootTask, modelIndex).show();
+        case Qt.RightButton: {
+            // TaskSpot #19: when the card lives in the search popup, the
+            // click surface is the popup window, not the panel. The menu's
+            // Wayland transient parent comes from its QML object parent's
+            // window (QMenuProxy::openInternal), so without this override
+            // the menu is a panel popup while the grab is on the popup
+            // surface and KWin dismisses it instantly. visualParent stays
+            // the Task: ContextMenu.qml's actions and its positioning use
+            // it. The popup's dismissal paths pause while the menu is open.
+            const popup = tasks.searchPopup;
+            const menu = tasks.createContextMenu(rootTask, modelIndex,
+                popup ? { parentItem: cardMouseArea } : {});
+            if (popup) {
+                popup.menuOpen = true;
+                menu.statusChanged.connect(() => {
+                    if (menu.status !== PlasmaExtras.Menu.Open) {
+                        popup.menuOpen = false;
+                    }
+                });
+            }
+            menu.show();
             break;
+        }
         }
     }
 
