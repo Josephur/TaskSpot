@@ -13,6 +13,31 @@
 // Can't be `let`, or else QML counterpart won't be able to assign to it.
 var taskManagerInstanceCount = 0;
 
+// TaskSpot (#24): plugin id of the icons-only variant package
+// (com.stack-tech.plasma.taskspot.icontasks binds our shared plugin via
+// X-Plasma-RootPath, like stock's org.kde.plasma.icontasks). Every
+// icons-only branch in the QML consults this helper so the variant logic
+// has one point of truth.
+// TaskSpot (#24): the plugin ids of the TaskSpot widget family — the
+// icons-and-text applet and the icons-only variant (which binds the shared
+// plugin via X-Plasma-RootPath). TaskSpot-specific behavior (hover search,
+// its settings pages) must be keyed on membership in this family, not on a
+// single exact id, or the variant silently loses the features.
+const taskspotPlasmoidIds = [
+    "com.stack-tech.plasma.taskspot",
+    "com.stack-tech.plasma.taskspot.icontasks",
+];
+
+function isTaskSpot(plasmoid) {
+    return taskspotPlasmoidIds.includes(plasmoid.pluginName);
+}
+
+const iconsOnlyPlasmoidId = "com.stack-tech.plasma.taskspot.icontasks";
+
+function iconsOnly(plasmoid) {
+    return plasmoid.pluginName === iconsOnlyPlasmoidId;
+}
+
 function activateNextPrevTask(anchor, next, wheelSkipMinimized, wheelEnabled, tasks) {
     // FIXME TODO: Unnecessarily convoluted and costly; optimize.
 

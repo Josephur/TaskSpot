@@ -11,13 +11,16 @@ import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+// TaskSpot (#24): shared applet module provides the icons-only variant
+// check (TaskTools.iconsOnly).
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 
 KCMUtils.SimpleKCM {
     id: root
 
     readonly property bool plasmaPaAvailable: Qt.createComponent("PulseAudio.qml").status === Component.Ready
     readonly property bool plasmoidVertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    readonly property bool iconOnly: Plasmoid.pluginName === "org.kde.plasma.icontasks"
+    readonly property bool iconOnly: TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
 
     property alias cfg_showToolTips: showToolTips.checked
     property alias cfg_highlightWindows: highlightWindows.checked

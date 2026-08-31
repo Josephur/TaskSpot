@@ -15,6 +15,9 @@ import org.kde.plasma.plasmoid
 
 import org.kde.plasma.workspace.dbus as DBus
 import org.kde.taskmanager as TaskManager
+// TaskSpot (#24): shared applet module provides the icons-only variant
+// check (TaskTools.iconsOnly).
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 
 KCMUtils.SimpleKCM {
     id: root
@@ -103,25 +106,25 @@ KCMUtils.SimpleKCM {
         // TaskSpot (#14): search bar toggles, only for TaskSpot widgets.
         Item {
             Kirigami.FormData.isSection: true
-            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
         }
 
         QQC2.CheckBox {
             id: taskspotSearchEnabled
-            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
             Kirigami.FormData.label: i18nc("@label:check TaskSpot search bar", "Search:")
             text: i18nc("@option:check TaskSpot search bar", "Enable search bar")
         }
 
         QQC2.CheckBox {
             id: taskspotSearchHistoryEnabled
-            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
             text: i18nc("@option:check TaskSpot search history", "Keep search history")
             enabled: taskspotSearchEnabled.checked
         }
 
         QQC2.Button {
-            visible: (Plasmoid.pluginName === "com.stack-tech.plasma.taskspot")
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
             text: i18nc("@button:clear TaskSpot search history", "Clear search history")
             icon.name: "edit-clear-history"
             enabled: taskspotSearchEnabled.checked && taskspotSearchHistoryEnabled.checked
@@ -136,14 +139,14 @@ KCMUtils.SimpleKCM {
 
         QQC2.CheckBox {
             id: groupPopups
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
             text: i18nc("@option:check grouped task", "Combine into single button")
             enabled: groupingStrategy.currentIndex > 0
         }
 
         QQC2.CheckBox {
             id: onlyGroupWhenFull
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
             text: i18nc("@option:check grouped task","Group only when the Task Manager is full")
             enabled: groupingStrategy.currentIndex > 0 && groupPopups.checked
             Accessible.onPressAction: toggle()
@@ -151,7 +154,7 @@ KCMUtils.SimpleKCM {
 
         Item {
             Kirigami.FormData.isSection: true
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
         }
 
         QQC2.ComboBox {
@@ -193,20 +196,20 @@ KCMUtils.SimpleKCM {
 
         QQC2.CheckBox {
             id: separateLaunchers
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
             text: i18nc("@option:check configure task sorting", "Keep launchers separate")
             enabled: sortingStrategy.currentValue === TaskManager.TasksModel.SortManual
         }
 
         QQC2.CheckBox {
             id: hideLauncherOnStart
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
             text: i18nc("@option:check for icons-and-text task manager", "Hide launchers after application startup")
         }
 
         Item {
             Kirigami.FormData.isSection: true
-            visible: (Plasmoid.pluginName !== "org.kde.plasma.icontasks")
+            visible: !TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
         }
 
         QQC2.CheckBox {

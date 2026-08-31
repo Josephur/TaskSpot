@@ -1,0 +1,24 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Josephur"
+            }
+        ],
+        "BugReportUrl": "https://github.com/Josephur/TaskSpot/issues",
+        "Category": "Windows and Tasks",
+        "Description": "TaskSpot app bar displaying only icons, with live search over window titles and browser tabs",
+        "EnabledByDefault": false,
+        "Icon": "preferences-system-windows",
+        "Id": "com.stack-tech.plasma.taskspot.icontasks",
+        "License": "GPL-2.0-or-later",
+        "Name": "TaskSpot (Icons Only)",
+        "Website": "https://github.com/Josephur/TaskSpot"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": [
+        "org.kde.plasma.multitasking"
+    ],
+    "X-Plasma-RootPath": "com.stack-tech.plasma.taskspot"
+}

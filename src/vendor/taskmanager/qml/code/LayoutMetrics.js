@@ -10,12 +10,14 @@ const iconMargin = Math.round(Kirigami.Units.smallSpacing / 4);
 const labelMargin = Kirigami.Units.smallSpacing;
 
 function horizontalMargins() {
-    const spacingAdjustment = (tasks.plasmoid.pluginName === "org.kde.plasma.icontasks") ? tasks.plasmoid.configuration.iconSpacing : 1
+    // TaskSpot (#24): icons-only check via the tasks root's property, which
+    // routes through TaskTools.iconsOnly (single point of truth).
+    const spacingAdjustment = tasks.iconsOnly ? tasks.plasmoid.configuration.iconSpacing : 1
     return (taskFrame.margins.left + taskFrame.margins.right) * (tasks.vertical ? 1 : spacingAdjustment);
 }
 
 function verticalMargins() {
-    const spacingAdjustment = (tasks.plasmoid.pluginName === "org.kde.plasma.icontasks") ? tasks.plasmoid.configuration.iconSpacing : 1
+    const spacingAdjustment = tasks.iconsOnly ? tasks.plasmoid.configuration.iconSpacing : 1
     return (taskFrame.margins.top + taskFrame.margins.bottom) * (tasks.vertical ? spacingAdjustment : 1);
 }
 

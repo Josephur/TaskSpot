@@ -32,7 +32,7 @@ PlasmoidItem {
 
     readonly property bool shouldShrinkToZero: tasksModel.count === 0
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    readonly property bool iconsOnly: Plasmoid.pluginName === "org.kde.plasma.icontasks"
+    readonly property bool iconsOnly: TaskManagerApplet.TaskTools.iconsOnly(Plasmoid)
 
     property Task toolTipOpenedByClick
     property Task toolTipAreaItem
@@ -516,7 +516,7 @@ PlasmoidItem {
     // TaskSpot behavior must key off the applet ID so stock instances stay
     // 100% stock — same pattern kicker uses to tell itself apart from
     // kickerdash.
-    readonly property bool isTaskSpot: Plasmoid.pluginName === "com.stack-tech.plasma.taskspot"
+    readonly property bool isTaskSpot: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
 
     readonly property bool supportsLaunchers: true
 
