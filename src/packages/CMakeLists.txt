@@ -18,7 +18,6 @@ install(FILES
             ${TASKSPOT_VENDOR}/qml/AudioStream.qml
             ${TASKSPOT_VENDOR}/qml/ConfigAppearance.qml
             ${TASKSPOT_VENDOR}/qml/ConfigBehavior.qml
-            ${TASKSPOT_VENDOR}/qml/config.qml
             ${TASKSPOT_VENDOR}/qml/ContextMenu.qml
             ${TASKSPOT_VENDOR}/qml/GroupDialog.qml
             ${TASKSPOT_VENDOR}/qml/GroupExpanderOverlay.qml
@@ -37,6 +36,16 @@ install(FILES
             ${TASKSPOT_VENDOR}/qml/ToolTipInstance.qml
             ${TASKSPOT_VENDOR}/qml/ToolTipWindowMouseArea.qml
         DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/${TASKSPOT_ID}/contents/ui)
+
+# TaskSpot (#23): the config-dialog page list is a package-structure file,
+# NOT UI QML. For a disk-based package Plasma::Applet::configModel() serves
+# it from contents/config/config.qml (the "configmodel" file definition in
+# libplasma's plasma_applet_packagestructure.cpp). Upstream taskmanager
+# never hits this because plasma_add_applet embeds the file in the plugin's
+# qrc, where configModel() has a separate lookup branch. Installing it to
+# contents/ui/ left "Configure TaskSpot…" with zero settings pages.
+install(FILES ${TASKSPOT_VENDOR}/qml/config.qml
+        DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/${TASKSPOT_ID}/contents/config)
 
 install(FILES ${TASKSPOT_VENDOR}/main.xml
         DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/${TASKSPOT_ID}/contents/config)
