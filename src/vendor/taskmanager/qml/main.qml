@@ -554,13 +554,18 @@ PlasmoidItem {
         // so a menu created for a card living in the search popup gets the
         // popup window as its Wayland transient parent). Pre-#19 the merge
         // order silently made the defaults win, so args could only add.
+        // TaskSpot (#21): parentItem only picks the QML object parent —
+        // pop it before createObject(), which would otherwise try to set
+        // it as an initial property and warn on every card right-click.
         const initialArgs = Object.assign({
             visualParent: rootTask,
             modelIndex,
             mpris2Source,
             backend,
         }, args);
-        return contextMenuComponent.createObject(args.parentItem ?? rootTask, initialArgs);
+        const menuParent = initialArgs.parentItem ?? rootTask;
+        delete initialArgs.parentItem;
+        return contextMenuComponent.createObject(menuParent, initialArgs);
     }
 
     function shouldBeMirrored(reverseMode, layoutDirection, vertical): bool {
