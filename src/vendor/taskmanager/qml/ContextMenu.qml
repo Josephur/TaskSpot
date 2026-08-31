@@ -27,6 +27,14 @@ PlasmaExtras.Menu {
 
     property bool showAllPlaces: false
 
+    // TaskSpot (#20): visualParent only drives geometry (openRelative()
+    // anchors the menu to it). The task-facing uses below — audio-stream
+    // actions, showContextMenuWithAllPlaces(), the group-dialog close
+    // check — need the Task itself. For panel-task and group-dialog menus
+    // the two are the same item; a search-popup card menu passes
+    // visualParent = the card and taskItem = the panel task.
+    property var taskItem: visualParent
+
     placement: {
         if (Plasmoid.location === PlasmaCore.Types.LeftEdge) {
             return PlasmaExtras.Menu.RightPosedTopAlignedPopup;
@@ -60,7 +68,7 @@ PlasmaExtras.Menu {
     }
 
     function showContextMenuWithAllPlaces(): void {
-        (visualParent as Task).showContextMenu({showAllPlaces: true});
+        (taskItem as Task).showContextMenu({showAllPlaces: true});
     }
 
     function get(modelProp: int): var {
@@ -215,7 +223,7 @@ PlasmaExtras.Menu {
 
             // Technically media controls and audio streams are separate but for the user they're
             // semantically related, don't add a separator in between.
-            if (!(menu.visualParent as Task).hasAudioStream) {
+            if (!(menu.taskItem as Task).hasAudioStream) {
                 menu.addMenuItem(newSeparator(menu), startNewInstanceItem);
             }
 
@@ -254,14 +262,14 @@ PlasmaExtras.Menu {
         // is actually playing sound.
         // This way you can unmute, e.g. a telephony app, even after the conversation has ended,
         // so you still have it ringing later on.
-        if ((menu.visualParent as Task).hasAudioStream) {
+        if ((menu.taskItem as Task).hasAudioStream) {
             const muteItem = menu.newMenuItem(menu);
             muteItem.checkable = true;
             muteItem.checked = Qt.binding(() => {
-                return menu.visualParent && menu.visualParent.muted;
+                return menu.taskItem && menu.taskItem.muted;
             });
             muteItem.clicked.connect(() => {
-                menu.visualParent.toggleMuted();
+                menu.taskItem.toggleMuted();
             });
             muteItem.text = i18nc("@option:check inmenu, no separate unmute action", "Mute");
             muteItem.icon = "audio-volume-muted" + (Application.layoutDirection === Qt.RightToLeft ? "-rtl" : "");
@@ -801,7 +809,7 @@ PlasmaExtras.Menu {
         icon: "window-close"
 
         onClicked: {
-            if (tasks.groupDialog !== null && tasks.groupDialog.visualParent === menu.visualParent) {
+            if (tasks.groupDialog !== null && tasks.groupDialog.visualParent === menu.taskItem) {
                 tasks.groupDialog.visible = false;
             }
 

@@ -45,12 +45,24 @@ MouseArea {
             // Wayland transient parent comes from its QML object parent's
             // window (QMenuProxy::openInternal), so without this override
             // the menu is a panel popup while the grab is on the popup
-            // surface and KWin dismisses it instantly. visualParent stays
-            // the Task: ContextMenu.qml's actions and its positioning use
-            // it. The popup's dismissal paths pause while the menu is open.
+            // surface and KWin dismisses it instantly. The popup's dismissal
+            // paths pause while the menu is open.
+            //
+            // TaskSpot #20: visualParent is the CARD, so openRelative()
+            // anchors the menu at the clicked card — with the panel task
+            // as visualParent the menu popped up over the taskbar button,
+            // far away from the card on a near-full-width popup. The menu's
+            // actions still target the task through ContextMenu's
+            // taskItem, and minimumWidth mirrors a panel-task menu (the
+            // card itself spans the whole popup width).
             const popup = tasks.searchPopup;
             const menu = tasks.createContextMenu(rootTask, modelIndex,
-                popup ? { parentItem: cardMouseArea } : {});
+                popup ? {
+                    parentItem: cardMouseArea,
+                    visualParent: cardMouseArea,
+                    taskItem: rootTask,
+                    minimumWidth: rootTask.width,
+                } : {});
             if (popup) {
                 popup.menuOpen = true;
                 menu.statusChanged.connect(() => {
