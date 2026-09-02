@@ -87,14 +87,15 @@ PlasmaCore.ToolTipArea {
     readonly property real taskspotPanelScreenWidth: Screen.width
     readonly property real taskspotPanelScreenHeight: Screen.height
 
-    // TaskSpot (#7): grouped tasks in previews mode hand off to the
-    // focusable search popup instead of the stock tooltip, so the tooltip
-    // must stay inactive for them — otherwise it shows underneath and the
-    // popup lands on top of it a moment later. Gated on the TaskSpot applet
-    // identity (#10) so stock task manager instances never see any of this.
+    // TaskSpot (#7/#9): grouped tasks hand off to the focusable search
+    // popup instead of the stock tooltip in every groupedTaskVisualization
+    // mode (#9: hover search must not depend on the click-behavior
+    // setting), so the tooltip must stay inactive for them — otherwise it
+    // shows underneath and the popup lands on top of it a moment later.
+    // Gated on the TaskSpot applet identity (#10) so stock task manager
+    // instances never see any of this.
     readonly property bool taskspotSearchEligible: tasksRoot.isTaskSpot
         && Plasmoid.configuration.taskspotSearchEnabled !== false
-        && Plasmoid.configuration.groupedTaskVisualization === 1
         && model.IsGroupParent && model.ChildCount >= 2
 
     active: !inPopup && !tasksRoot.groupDialog && !tasksRoot.searchPopup
@@ -204,14 +205,12 @@ PlasmaCore.ToolTipArea {
     Accessible.role: Accessible.Button
     Accessible.onPressAction: leftTapHandler.leftClick()
 
-    // TaskSpot: in the "small window previews" hover mode
-    // (groupedTaskVisualization == 1), the popup is a PlasmaCore.ToolTipArea
-    // which deliberately refuses keyboard focus on Wayland — typed
-    // characters would go to whichever window had focus before. To make
-    // live search work there, transition from the non-focusable tooltip
-    // to a focusable PopupPlasmaWindow (the same GroupDialog used by
-    // groupedTaskVisualization == 3) after a short glance. The user can
-    // click a thumbnail during the delay to keep the tooltip behavior.
+    // TaskSpot: on hover of a search-eligible group, transition from the
+    // non-focusable tooltip surface to a focusable PopupPlasmaWindow (the
+    // same GroupDialog used by groupedTaskVisualization == 3) after a
+    // short glance. #9: this runs in every groupedTaskVisualization mode —
+    // the setting only decides what a click does. During the delay, a
+    // click still reaches the task's normal click handling.
     Timer {
         id: taskspotTransitionTimer
         // Short enough to feel snappy now that no stock tooltip plays
@@ -220,9 +219,8 @@ PlasmaCore.ToolTipArea {
         interval: 300
         repeat: false
         onTriggered: {
-            if (Plasmoid.configuration.groupedTaskVisualization !== 1) {
-                return;
-            }
+            // Cheap re-validation: the group may have dissolved during the
+            // glance delay.
             if (!model.IsGroupParent || model.ChildCount < 2) {
                 return;
             }
