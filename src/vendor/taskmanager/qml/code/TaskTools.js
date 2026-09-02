@@ -38,6 +38,22 @@ function iconsOnly(plasmoid) {
     return plasmoid.pluginName === iconsOnlyPlasmoidId;
 }
 
+// TaskSpot (#22): card-title color for a TaskSpotFilterProxyModel
+// matchState role value (0 inactive, 1 no match, 2 partial, 3 full word).
+// The configured colors come from the caller's Plasmoid.configuration so
+// this stays a pure function; unknown/absent states fall back to the
+// theme text color.
+function matchStateColor(state, noneColor, partialColor, fullColor, defaultColor) {
+    if (state === 1) {
+        return noneColor;
+    } else if (state === 2) {
+        return partialColor;
+    } else if (state === 3) {
+        return fullColor;
+    }
+    return defaultColor;
+}
+
 function activateNextPrevTask(anchor, next, wheelSkipMinimized, wheelEnabled, tasks) {
     // FIXME TODO: Unnecessarily convoluted and costly; optimize.
 

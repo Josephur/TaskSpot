@@ -10,6 +10,7 @@ import QtQuick.Layouts
 
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
+import org.kde.kquickcontrols as KQuickAddons
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 
@@ -41,6 +42,10 @@ KCMUtils.SimpleKCM {
     property alias cfg_reverseMode: reverseMode.checked
     property alias cfg_taskspotSearchEnabled: taskspotSearchEnabled.checked
     property alias cfg_taskspotSearchHistoryEnabled: taskspotSearchHistoryEnabled.checked
+    // TaskSpot (#22): per-card match feedback colors.
+    property alias cfg_taskspotNoMatchColor: noMatchColorButton.color
+    property alias cfg_taskspotPartialMatchColor: partialMatchColorButton.color
+    property alias cfg_taskspotFullMatchColor: fullMatchColorButton.color
 
     headerPaddingEnabled: false
     header: ColumnLayout {
@@ -131,6 +136,30 @@ KCMUtils.SimpleKCM {
                      && (Plasmoid.configuration.searchHistory !== undefined
                          && Plasmoid.configuration.searchHistory.length > 0)
             onClicked: Plasmoid.configuration.searchHistory = []
+        }
+
+        // TaskSpot (#22): per-card match feedback colors. Applied to window
+        // card titles in the search popup and the group dialog by how well
+        // each card matches the live query.
+        KQuickAddons.ColorButton {
+            id: noMatchColorButton
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
+            Kirigami.FormData.label: i18nc("@label:color TaskSpot match feedback", "No match:")
+            showAlphaChannel: false
+        }
+
+        KQuickAddons.ColorButton {
+            id: partialMatchColorButton
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
+            Kirigami.FormData.label: i18nc("@label:color TaskSpot match feedback", "Partial match:")
+            showAlphaChannel: false
+        }
+
+        KQuickAddons.ColorButton {
+            id: fullMatchColorButton
+            visible: TaskManagerApplet.TaskTools.isTaskSpot(Plasmoid)
+            Kirigami.FormData.label: i18nc("@label:color TaskSpot match feedback", "Full word match:")
+            showAlphaChannel: false
         }
 
         Item {

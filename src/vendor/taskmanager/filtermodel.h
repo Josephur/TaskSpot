@@ -62,6 +62,20 @@ class TaskFilterProxyModel : public QAbstractProxyModel
 public:
     static constexpr int SourceRowRole = Qt::UserRole + 1000;
 
+    /**
+     * TaskSpot (#22): per-row match classification for the card-title
+     * feedback colors. Values are plain ints by QML convention (plain
+     * properties/enums proved the reliable surface on this registered
+     * type; see the groupRow and #8 notes).
+     */
+    enum MatchState : int {
+        MatchInactive = 0, ///< no filter set — default text color
+        MatchNone = 1,     ///< row visible only via fallback; does not match
+        MatchPartial = 2,  ///< query occurs inside a word ("kit" in "kitten")
+        MatchFull = 3,     ///< query occurs as a whole word ("kitten")
+    };
+    static constexpr int MatchStateRole = Qt::UserRole + 1001;
+
     explicit TaskFilterProxyModel(QObject *parent = nullptr);
     ~TaskFilterProxyModel() override;
 
@@ -106,6 +120,7 @@ Q_SIGNALS:
 
 private:
     void rebuild();
+    int classifyMatch(const QString &title) const;
 
     QString m_filter;
     bool m_fallbackToUnfiltered = false;

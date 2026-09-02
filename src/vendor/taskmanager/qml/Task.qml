@@ -702,6 +702,17 @@ PlasmaCore.ToolTipArea {
         textFormat: Text.PlainText
         verticalAlignment: Text.AlignVCenter
         maximumLineCount: Plasmoid.configuration.maxTextLines || undefined
+        // TaskSpot (#22): inside the group dialog the card list is driven
+        // by the live-filter proxy, whose matchState role drives the
+        // per-card feedback colors; undefined elsewhere (panel tasks on
+        // the raw tasksModel) keeps the theme text color.
+        color: model.matchState !== undefined
+            ? TaskManagerApplet.TaskTools.matchStateColor(model.matchState,
+                Plasmoid.configuration.taskspotNoMatchColor,
+                Plasmoid.configuration.taskspotPartialMatchColor,
+                Plasmoid.configuration.taskspotFullMatchColor,
+                Kirigami.Theme.textColor)
+            : Kirigami.Theme.textColor
 
         // The accessible item of this element is only used for debugging
         // purposes, and it will never gain focus (thus it won't interfere

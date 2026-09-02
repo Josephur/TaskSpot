@@ -172,8 +172,12 @@ void TaskFilterProxyModel::rebuild()
     // unchanged, refresh roles in place instead of resetting.
     if (newRows == m_rows) {
         if (!newRows.isEmpty()) {
+            // MatchStateRole rides along (#22): when only the filter text
+            // changed (row set identical, e.g. successive no-match
+            // fallbacks), the classifications still changed and the card
+            // titles must re-evaluate their colors.
             Q_EMIT dataChanged(index(0, 0), index(newRows.count() - 1, 0),
-                               QVector<int>() << Qt::DisplayRole);
+                               QVector<int>() << Qt::DisplayRole << MatchStateRole);
         }
     } else {
         beginResetModel();
@@ -223,6 +227,14 @@ QVariant TaskFilterProxyModel::data(const QModelIndex &proxyIndex, int role) con
         }
         return m_rows.at(proxyIndex.row());
     }
+    if (role == MatchStateRole) {
+        if (!proxyIndex.isValid() || proxyIndex.row() >= m_rows.count() || !m_groupIndex.isValid()
+            || !sourceModel()) {
+            return MatchInactive;
+        }
+        return classifyMatch(
+            sourceModel()->index(m_rows.at(proxyIndex.row()), 0, m_groupIndex).data(Qt::DisplayRole).toString());
+    }
     // Forward explicitly: the QAbstractProxyModel base behavior combined
     // with a transiently invalid group index surfaced as undefined roles
     // in the card delegates ("undefined" window titles — #12).
@@ -239,7 +251,37 @@ QHash<int, QByteArray> TaskFilterProxyModel::roleNames() const
         roles = source->roleNames();
     }
     roles[SourceRowRole] = "sourceRow";
+    roles[MatchStateRole] = "matchState";
     return roles;
+}
+
+int TaskFilterProxyModel::classifyMatch(const QString &title) const
+{
+    // Mirrors rebuild()'s substring test exactly (same Qt::CaseInsensitive
+    // primitive), so a row's state can never disagree with its visibility:
+    // no contains() match here implies the row can only be visible via the
+    // unfiltered fallback.
+    if (m_filter.isEmpty()) {
+        return MatchInactive;
+    }
+    if (!title.contains(m_filter, Qt::CaseInsensitive)) {
+        return MatchNone;
+    }
+    // Whole-word check: an occurrence of the query bounded on both sides
+    // by string edges or non-alphanumeric characters ("ssh" matches
+    // "SSH:" fully; "kit" inside "kitten" stays partial). Boundary scan
+    // rather than token equality so queries containing separators
+    // ("main-2") can still count as whole matches.
+    for (qsizetype pos = title.indexOf(m_filter, 0, Qt::CaseInsensitive); pos >= 0;
+         pos = title.indexOf(m_filter, pos + 1, Qt::CaseInsensitive)) {
+        const bool leftBound = pos == 0 || !title.at(pos - 1).isLetterOrNumber();
+        const qsizetype end = pos + m_filter.size();
+        const bool rightBound = end >= title.size() || !title.at(end).isLetterOrNumber();
+        if (leftBound && rightBound) {
+            return MatchFull;
+        }
+    }
+    return MatchPartial;
 }
 
 QModelIndex TaskFilterProxyModel::mapToSource(const QModelIndex &proxyIndex) const

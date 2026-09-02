@@ -191,6 +191,10 @@ Loader {
                     // uses inside the group dialog).
                     submodelIndex: tasksModel.makeModelIndex(toolTipDelegate.rootIndex.row,
                         (model.sourceRow !== undefined && model.sourceRow >= 0) ? model.sourceRow : index)
+                    // TaskSpot (#22): per-card match feedback; 0 (default
+                    // text color) on the stock tooltip path, where the
+                    // model has no matchState role at all.
+                    matchState: model.matchState ?? 0
                     appPid: model.AppPid
                     // 'display' is required already
                     isMinimized: model.IsMinimized

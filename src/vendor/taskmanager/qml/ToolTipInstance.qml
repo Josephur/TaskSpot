@@ -20,6 +20,9 @@ import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
 import org.kde.kwindowsystem
+// TaskSpot (#22): shared applet module provides the match-state color
+// helper (TaskTools.matchStateColor).
+import plasma.applet.com.stack_tech.plasma.taskspot as TaskManagerApplet
 
 ColumnLayout {
     id: root
@@ -34,6 +37,12 @@ ColumnLayout {
     required property /*list<var>*/ var virtualDesktops // Can't use list<var> because of QTBUG-127600
     required property list<string> activities
     required property bool isReadyForPainting
+
+    // TaskSpot (#22): per-card match state fed by ToolTipDelegate's group
+    // delegate from TaskSpotFilterProxyModel's matchState role (0 inactive,
+    // 1 no match, 2 partial, 3 full word). The single-window tooltip path
+    // never sets it; the title then keeps the theme text color.
+    property int matchState: 0
 
     property bool hasTrackInATitle: false
     property int orientation: ListView.Vertical // vertical for compact single-window tooltips
@@ -146,7 +155,15 @@ ColumnLayout {
                     text: ((root.titleIncludesTrack && playerController.active) ||
                            (root.title === appNameHeading.text && somethingVisible))
                           ? "" : root.title
-                    color: (headerHoverHandler.visible && headerHoverHighlight.pressed) ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
+                    // TaskSpot (#22): match-state feedback color on the card
+                    // title, except while the header hover highlight has it.
+                    color: (headerHoverHandler.visible && headerHoverHighlight.pressed)
+                        ? Kirigami.Theme.highlightedTextColor
+                        : TaskManagerApplet.TaskTools.matchStateColor(root.matchState,
+                            Plasmoid.configuration.taskspotNoMatchColor,
+                            Plasmoid.configuration.taskspotPartialMatchColor,
+                            Plasmoid.configuration.taskspotFullMatchColor,
+                            Kirigami.Theme.textColor)
                     opacity: 0.75
                     font.bold: toolTipDelegate.isGroup && toolTipDelegate.parentTask.model.IsActive && root.index == tasksModel.activeTask.row
                     visible: root.orientation === ListView.Horizontal || text.length !== 0

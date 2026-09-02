@@ -18,6 +18,18 @@
       <label>Completed search queries as JSON entries (query, use count, last used, app id); each app's group popup shows only its own entries, most-used searches promoted.</label>
       <default></default>
     </entry>
+    <entry name="taskspotNoMatchColor" type="Color">
+      <label>Card title color for windows shown only via the no-match fallback (query does not match them).</label>
+      <default>#da4453</default>
+    </entry>
+    <entry name="taskspotPartialMatchColor" type="Color">
+      <label>Card title color for titles containing the query inside a word ("kit" in "kitten").</label>
+      <default>#1d99f3</default>
+    </entry>
+    <entry name="taskspotFullMatchColor" type="Color">
+      <label>Card title color for titles containing the query as a whole word ("kitten" matches "kitten").</label>
+      <default>#27ae60</default>
+    </entry>
     <entry name="showOnlyCurrentScreen" type="Bool">
       <label>Whether to show only window tasks that are on the same screen as the widget.</label>
       <default>false</default>
