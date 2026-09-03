@@ -145,7 +145,19 @@ PlasmaCore.PopupPlasmaWindow {
     function handleActivate(event): void {
         if (searchMode) {
             activateFirstResult();
+        } else {
+            activateSelectedCard();
         }
+        event.accepted = true;
+    }
+
+    // TaskSpot #25: Left/Right drive the cards until the user starts
+    // typing; from then on they belong to the text cursor.
+    function handleArrow(event, delta: int): void {
+        if (searchMode) {
+            return; // not accepted — falls through to the text cursor
+        }
+        moveSelection(delta);
         event.accepted = true;
     }
 
@@ -389,6 +401,8 @@ PlasmaCore.PopupPlasmaWindow {
         Keys.onEscapePressed: event => searchPopup.handleEscape(event)
         Keys.onReturnPressed: event => searchPopup.handleActivate(event)
         Keys.onEnterPressed: event => searchPopup.handleActivate(event)
+        Keys.onLeftPressed: event => searchPopup.handleArrow(event, -1)
+        Keys.onRightPressed: event => searchPopup.handleArrow(event, 1)
 
         // TaskSpot #11: passive hover tracker for the dismissal grace
         // timer below. A HoverHandler enables hover events on its parent
@@ -428,6 +442,8 @@ PlasmaCore.PopupPlasmaWindow {
                 Keys.onEscapePressed: event => searchPopup.handleEscape(event)
                 Keys.onReturnPressed: event => searchPopup.handleActivate(event)
                 Keys.onEnterPressed: event => searchPopup.handleActivate(event)
+                Keys.onLeftPressed: event => searchPopup.handleArrow(event, -1)
+                Keys.onRightPressed: event => searchPopup.handleArrow(event, 1)
             }
 
             ListView {
