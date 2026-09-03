@@ -42,6 +42,13 @@ PlasmaCore.PopupPlasmaWindow {
 
     readonly property alias searchField: searchField
 
+    // TaskSpot #25: taskspotSearchEnabled controls only whether the
+    // search bar is part of the popup. searchField stays instantiated
+    // while hidden — closeGraceTimer and activateFirstResult() both
+    // reference its text.
+    readonly property bool searchVisible:
+        Plasmoid.configuration.taskspotSearchEnabled !== false
+
     // NOTE: do not assign takesFocus here — PopupPlasmaWindow has no such
     // property in Plasma 6.7.4, and assigning a non-existent property
     // makes the component fail to compile so createObject() returns null.
@@ -339,6 +346,8 @@ PlasmaCore.PopupPlasmaWindow {
         // width. Labels are buttons (border + hover/press = clickable
         // separate items); clicking one re-runs that search.
         RowLayout {
+            visible: searchPopup.searchVisible
+
             Layout.fillWidth: true
             spacing: Kirigami.Units.smallSpacing
 

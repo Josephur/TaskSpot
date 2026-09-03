@@ -94,8 +94,11 @@ PlasmaCore.ToolTipArea {
     // shows underneath and the popup lands on top of it a moment later.
     // Gated on the TaskSpot applet identity (#10) so stock task manager
     // instances never see any of this.
+    // TaskSpot (#25): eligibility no longer consults
+    // taskspotSearchEnabled — the popup is the hover UI for every
+    // eligible group, and that setting only controls whether the search
+    // bar appears inside it (see SearchPopup.searchVisible).
     readonly property bool taskspotSearchEligible: tasksRoot.isTaskSpot
-        && Plasmoid.configuration.taskspotSearchEnabled !== false
         && model.IsGroupParent && model.ChildCount >= 2
 
     active: !inPopup && !tasksRoot.groupDialog && !tasksRoot.searchPopup
