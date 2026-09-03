@@ -98,6 +98,40 @@ PlasmaCore.PopupPlasmaWindow {
     // first result.
     readonly property bool searchMode: searchVisible && searchField.text !== ""
 
+    // TaskSpot #25: browse-mode card selection. -1 means nothing is
+    // selected, which is the state a freshly opened popup starts in, so
+    // Enter cannot raise a window the user never pointed at.
+    property int selectedIndex: -1
+
+    readonly property var cardList: toolTipContent.item
+        ? toolTipContent.item.contentItem : null
+
+    onSearchModeChanged: selectedIndex = -1
+    onVisibleChanged: if (!visible) { selectedIndex = -1; }
+
+    function moveSelection(delta: int): void {
+        const list = cardList;
+        if (!list || list.count <= 0) {
+            return;
+        }
+        let next = selectedIndex < 0
+            ? (delta > 0 ? 0 : list.count - 1)
+            : selectedIndex + delta;
+        next = Math.max(0, Math.min(next, list.count - 1));
+        selectedIndex = next;
+        list.positionViewAtIndex(next, ListView.Contain);
+    }
+
+    function activateSelectedCard(): void {
+        const list = cardList;
+        if (!list || selectedIndex < 0 || selectedIndex >= list.count) {
+            return;
+        }
+        tasksModel.requestActivate(
+            tasksModel.makeModelIndex(searchPopup.task.index, selectedIndex));
+        searchPopup.visible = false;
+    }
+
     function handleEscape(event): void {
         if (searchMode) {
             searchField.text = "";
@@ -488,10 +522,57 @@ PlasmaCore.PopupPlasmaWindow {
     // and hover-less, so clicks and hover pass straight through to the
     // cards underneath (wheel up / left notch scrolls left).
     MouseArea {
+        id: wheelOverlay
+
         anchors.fill: parent
         z: 100
         acceptedButtons: Qt.NoButton
         hoverEnabled: false
+
+        // TaskSpot #25: browse-mode selection is drawn here rather than
+        // as a ListView highlight, because the card list lives in shared
+        // ToolTipDelegate.qml which stock widgets also use (#18's A/B
+        // control). It is a child of this overlay, not of contentColumn,
+        // so the ColumnLayout never manages it as a row.
+        Rectangle {
+            id: selectionHighlight
+
+            readonly property Item card: searchPopup.selectedIndex >= 0
+                && searchPopup.cardList
+                ? searchPopup.cardList.itemAtIndex(searchPopup.selectedIndex)
+                : null
+
+            function reposition(): void {
+                if (!card) {
+                    return;
+                }
+                const p = card.mapToItem(wheelOverlay, 0, 0);
+                x = p.x;
+                y = p.y;
+            }
+
+            visible: card !== null
+            color: "transparent"
+            radius: Kirigami.Units.cornerRadius
+            border.width: 2
+            border.color: Kirigami.Theme.highlightColor
+
+            width: card ? card.width : 0
+            height: card ? card.height : 0
+
+            onCardChanged: reposition()
+
+            // mapToItem is not reactive, so re-run it whenever the row
+            // scrolls under a fixed selection.
+            Connections {
+                target: searchPopup.cardList
+                enabled: selectionHighlight.card !== null
+
+                function onContentXChanged() {
+                    selectionHighlight.reposition();
+                }
+            }
+        }
 
         onWheel: event => {
             const list = toolTipContent.item
