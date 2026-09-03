@@ -106,8 +106,12 @@ PlasmaCore.PopupPlasmaWindow {
     readonly property var cardList: toolTipContent.item
         ? toolTipContent.item.contentItem : null
 
+    // NOTE: the root object already declares onVisibleChanged further
+    // down; a second handler for the same signal is "Property value set
+    // multiple times", which fails component compilation and makes
+    // createObject() return null — the popup then silently never
+    // appears. Reset-on-hide belongs in that existing handler.
     onSearchModeChanged: selectedIndex = -1
-    onVisibleChanged: if (!visible) { selectedIndex = -1; }
 
     function moveSelection(delta: int): void {
         const list = cardList;
@@ -629,7 +633,14 @@ PlasmaCore.PopupPlasmaWindow {
     onVisibleChanged: {
         if (visible) {
             requestActivate();
-            searchField.forceActiveFocus();
+            // TaskSpot #25: with the search bar hidden there is no
+            // visible field to focus, so the content root takes the
+            // keyboard instead and browse-mode keys still work.
+            if (searchVisible) {
+                searchField.forceActiveFocus();
+            } else {
+                contentColumn.forceActiveFocus();
+            }
         } else {
             tasks.searchPopup = null;
             destroy();
