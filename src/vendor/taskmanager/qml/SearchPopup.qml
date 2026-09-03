@@ -91,6 +91,30 @@ PlasmaCore.PopupPlasmaWindow {
 
     // TaskSpot #12: Enter activates the first real search result (never
     // fallback rows) and closes the popup, GroupDialog-style.
+    // TaskSpot #25: the popup has two keyboard modes, switched by query
+    // content rather than by a setting, so the mode is always visible on
+    // screen. Browse mode (bar hidden, or bar visible with an empty
+    // query) navigates cards; search mode filters and activates the
+    // first result.
+    readonly property bool searchMode: searchVisible && searchField.text !== ""
+
+    function handleEscape(event): void {
+        if (searchMode) {
+            searchField.text = "";
+            event.accepted = true;
+            return;
+        }
+        searchPopup.visible = false;
+        event.accepted = true;
+    }
+
+    function handleActivate(event): void {
+        if (searchMode) {
+            activateFirstResult();
+        }
+        event.accepted = true;
+    }
+
     function activateFirstResult(): void {
         if (searchField.text === "" || taskFilterModel.showingUnfiltered
             || taskFilterModel.sourceRows.length <= 0) {
@@ -322,6 +346,15 @@ PlasmaCore.PopupPlasmaWindow {
         id: contentColumn
 
         clip: true
+        focus: true
+
+        // TaskSpot #25: key policy lives here, not on searchField, so it
+        // still works when the search bar is hidden. searchField keeps
+        // its own handlers because a focused TextField consumes these
+        // keys before they reach an ancestor.
+        Keys.onEscapePressed: event => searchPopup.handleEscape(event)
+        Keys.onReturnPressed: event => searchPopup.handleActivate(event)
+        Keys.onEnterPressed: event => searchPopup.handleActivate(event)
 
         // TaskSpot #11: passive hover tracker for the dismissal grace
         // timer below. A HoverHandler enables hover events on its parent
@@ -358,9 +391,9 @@ PlasmaCore.PopupPlasmaWindow {
                 Layout.alignment: Qt.AlignVCenter
                 placeholderText: i18n("Search windows…")
 
-                Keys.onEscapePressed: searchPopup.visible = false
-                Keys.onReturnPressed: searchPopup.activateFirstResult()
-                Keys.onEnterPressed: searchPopup.activateFirstResult()
+                Keys.onEscapePressed: event => searchPopup.handleEscape(event)
+                Keys.onReturnPressed: event => searchPopup.handleActivate(event)
+                Keys.onEnterPressed: event => searchPopup.handleActivate(event)
             }
 
             ListView {
