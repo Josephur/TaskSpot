@@ -55,6 +55,14 @@ including work performed locally.
 
 ## Development workflow
 
+- **Before changing any QML under `src/vendor/taskmanager/qml/`, read
+  `docs/TROUBLESHOOTING.md`** and follow its mandatory verification
+  protocol. A build that succeeds proves nothing about a lazily-created
+  component: `SearchPopup.qml` is only instantiated on hover, so a fatal
+  error in it is invisible to `cmake --build`, to `qmllint`, and to a
+  `plasmoidviewer` smoke run. Hovering a grouped task and reading the
+  journal is the only gate that sees it.
+
 - Build: `cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.local`
   then `cmake --build build && cmake --install build`.
 - Test without touching the running shell:
