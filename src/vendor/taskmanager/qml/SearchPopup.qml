@@ -59,7 +59,15 @@ PlasmaCore.PopupPlasmaWindow {
             ? PlasmaCore.AppletPopup.AtScreenEdges
             : PlasmaCore.AppletPopup.AtScreenEdges | PlasmaCore.AppletPopup.AtPanelEdges
 
-    margin: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets) ? Kirigami.Units.largeSpacing : 0
+    // TaskSpot (#27): a permanent margin, independent of the containment's
+    // floating-applets preference. PopupPlasmaWindow's placement treats
+    // the margin as a halo: the padded rect is clamped to the screen and
+    // the final position lands at least margin px from the edges — with
+    // margin 0 the popup clamped flush to the display border and the
+    // content touched the pixel edge. updateSize() caps the window width
+    // at panelScreenWidth - 2*margin to match, so oversized card rows
+    // engage the horizontal scrollbar instead of violating the gap.
+    margin: Kirigami.Units.largeSpacing
 
     popupDirection: switch (Plasmoid.location) {
         case PlasmaCore.Types.TopEdge:
@@ -330,7 +338,10 @@ PlasmaCore.PopupPlasmaWindow {
     // ToolTipDelegate loader settles the final size after the popup is
     // already visible; PopupPlasmaWindow repositions on every resize.
     function updateSize() {
-        const maxWidth = panelScreenWidth > 0 ? panelScreenWidth : Screen.width
+        // TaskSpot (#27): leave room for the permanent edge margin on both
+        // sides (#11's monitor-width cap minus the halo the placement
+        // clamping reserves); wider content scrolls horizontally instead.
+        const maxWidth = (panelScreenWidth > 0 ? panelScreenWidth : Screen.width) - 2 * margin
         // Keep the half-monitor height cap TaskSpot chose in #11; content
         // taller than that scrolls inside the delegate.
         const maxHeight = panelScreenHeight > 0 ? panelScreenHeight / 2 : Screen.height / 2

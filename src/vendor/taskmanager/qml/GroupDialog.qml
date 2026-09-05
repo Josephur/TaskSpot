@@ -28,7 +28,12 @@ PlasmaCore.PopupPlasmaWindow {
             ? PlasmaCore.AppletPopup.AtScreenEdges
             : PlasmaCore.AppletPopup.AtScreenEdges | PlasmaCore.AppletPopup.AtPanelEdges
 
-    margin: (Plasmoid.containmentDisplayHints & PlasmaCore.Types.ContainmentPrefersFloatingApplets) ? Kirigami.Units.largeSpacing : 0
+    // TaskSpot (#27): a permanent margin, independent of the containment's
+    // floating-applets preference — same reasoning as SearchPopup: the
+    // placement clamping uses the margin as a halo, so with margin 0 the
+    // dialog clamped flush to the display border when the anchor task sat
+    // near a screen edge.
+    margin: Kirigami.Units.largeSpacing
 
     // TaskSpot: do NOT assign takesFocus here. PopupPlasmaWindow has no
     // such property in Plasma 6.7.4 (see
