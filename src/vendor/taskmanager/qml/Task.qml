@@ -227,6 +227,14 @@ PlasmaCore.ToolTipArea {
             if (!model.IsGroupParent || model.ChildCount < 2) {
                 return;
             }
+            // TaskSpot #26: the handoff must be idempotent per task —
+            // createSearchPopup() destroys any open popup first, so a
+            // re-trigger for the task whose popup is already showing
+            // (hover re-entered the button through an edge case) flashed
+            // the popup away and recreated it in a loop.
+            if (tasksRoot.searchPopup && tasksRoot.searchPopup.task === task) {
+                return;
+            }
             task.hideToolTip();
             TaskManagerApplet.TaskTools.createSearchPopup(task, tasksRoot,
                 taskspotPanelScreenWidth, taskspotPanelScreenHeight);

@@ -65,6 +65,7 @@ Loader {
     // below sits at the model root instead of under rootIndex, and the
     // delegate maps rows back with the proxy's sourceRow role. Stock
     // tooltip usage never sets it and keeps the raw tasksModel behavior.
+    readonly property bool inTaskSpotPopup: filterModel !== null
 
     // TaskSpot #14: forwarded from the card delegates; the search popup
     // listens to record a completed search.
@@ -98,6 +99,7 @@ Loader {
             isOnAllVirtualDesktops: toolTipDelegate.isOnAllVirtualDesktops
             virtualDesktops: toolTipDelegate.virtualDesktops
             activities: toolTipDelegate.activities
+            inTaskSpotPopup: toolTipDelegate.inTaskSpotPopup
             model: null
         }
     }
@@ -195,6 +197,9 @@ Loader {
                     // text color) on the stock tooltip path, where the
                     // model has no matchState role at all.
                     matchState: model.matchState ?? 0
+                    // TaskSpot (#26): popup-hosted cards must not trigger
+                    // the KWin highlight (it ghosts this popup window).
+                    inTaskSpotPopup: toolTipDelegate.inTaskSpotPopup
                     appPid: model.AppPid
                     // 'display' is required already
                     isMinimized: model.IsMinimized

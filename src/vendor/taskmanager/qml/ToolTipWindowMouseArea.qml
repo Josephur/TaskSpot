@@ -18,6 +18,14 @@ MouseArea {
     required property /*undefined|WId where WId = int|string*/ var winId
     required property Task rootTask
 
+    // TaskSpot (#26): when hosted in the TaskSpot search popup, hovering
+    // this card must NOT request a KWin highlight — the highlight effect
+    // ghosts (fades to opacity 0) every normal/dialog window except the
+    // highlighted ones, and the hosting popup is exactly such a window,
+    // so the highlight made the whole popup invisible. Cancel instead, so
+    // a highlight from a previous stock-tooltip hover is also cleared.
+    property bool inTaskSpotPopup: false
+
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
     hoverEnabled: true
     enabled: winId !== undefined
@@ -78,6 +86,10 @@ MouseArea {
     }
 
     onContainsMouseChanged: {
-        tasks.windowsHovered([String(winId)], containsMouse);
+        if (inTaskSpotPopup) {
+            tasks.cancelHighlightWindows();
+        } else {
+            tasks.windowsHovered([String(winId)], containsMouse);
+        }
     }
 }

@@ -408,12 +408,25 @@ PlasmaCore.PopupPlasmaWindow {
         Keys.onLeftPressed: event => searchPopup.handleArrow(event, -1)
         Keys.onRightPressed: event => searchPopup.handleArrow(event, 1)
 
-        // TaskSpot #11: passive hover tracker for the dismissal grace
+        // TaskSpot #11/#26: passive hover tracker for the dismissal grace
         // timer below. A HoverHandler enables hover events on its parent
         // item by itself; it does not steal hover or clicks from the
         // window cards.
+        //
+        // TaskSpot #26: the handler is parented to the window's
+        // contentItem, not to this column. The window's frame padding /
+        // margin strips around the mainItem belong to our window (they
+        // are painted as its background) but sit outside contentColumn —
+        // a column-bound handler went false the instant the pointer
+        // touched the popup's top or bottom edge while moving between
+        // cards, and the grace timer then closed a popup the pointer
+        // never left. HoverHandler is passive, so the cards' hover and
+        // click areas are unaffected: hover over any child still
+        // propagates up the parent chain to contentItem.
         HoverHandler {
             id: popupHover
+
+            parent: searchPopup.contentItem
 
             onHoveredChanged: {
                 if (hovered) {

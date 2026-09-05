@@ -44,6 +44,16 @@ ColumnLayout {
     // never sets it; the title then keeps the theme text color.
     property int matchState: 0
 
+    // TaskSpot (#26): true when this instance is hosted in the TaskSpot
+    // search popup. Popup-hosted cards must not trigger the KWin window
+    // highlight on hover: the highlight effect ghosts every normal/dialog
+    // window except the highlighted ones, and this popup IS such a window,
+    // so requesting a highlight faded the whole popup to opacity 0 — it
+    // looked like the card/popup vanished. Stock tooltips are unaffected:
+    // the shared tooltip window is tooltip-typed and excluded from the
+    // effect.
+    property bool inTaskSpotPopup: false
+
     property bool hasTrackInATitle: false
     property int orientation: ListView.Vertical // vertical for compact single-window tooltips
 
@@ -238,6 +248,7 @@ ColumnLayout {
                 rootTask: toolTipDelegate.parentTask
                 modelIndex: root.submodelIndex
                 winId: thumbnailSourceItem.winId
+                inTaskSpotPopup: root.inTaskSpotPopup
             }
         }
 
@@ -421,6 +432,7 @@ ColumnLayout {
                 rootTask: toolTipDelegate.parentTask
                 modelIndex: root.submodelIndex
                 winId: thumbnailSourceItem.winId
+                inTaskSpotPopup: root.inTaskSpotPopup
                 onCardActivated: root.cardActivated()
             }
         }
